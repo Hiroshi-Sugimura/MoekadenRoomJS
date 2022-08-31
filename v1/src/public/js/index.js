@@ -28,12 +28,13 @@ function onLoad() {
 	let ctx = can.getContext('2d');
 
 	let img_loadedNum = 0;
-	let IMG_LOADED_MAX = 6;  // 画像ロードの管理
+	let IMG_LOADED_MAX = 7;  // 画像ロードの管理
 
 	// 固定/背景画像
 	let IMG_BACK	= new Image();		IMG_BACK.src = './img/Background.png';
 	let IMG_COUCH	= new Image();		IMG_COUCH.src = './img/Items.Couch.png';
 	let IMG_PLANT	= new Image();		IMG_PLANT.src = './img/Items.Plant.png';
+	let IMG_TV		= new Image();		IMG_TV.src	 = './img/Items.TV.On.Body.png';
 	let IMG_SHELF	= new Image();		IMG_SHELF.src = './img/Items.Shelf.png';
 	let IMG_RED_CUSHION	= new Image();		IMG_RED_CUSHION.src = './img/Items.RedCushion.Base.png';
 	let IMG_BLUE_CUSHION	= new Image();		IMG_BLUE_CUSHION.src = './img/Items.BlueCushion.Base.png';
@@ -45,6 +46,7 @@ function onLoad() {
 		IMG_BACK.onload = () => { img_loadedNum += 1; alreadySignal(); };
 		IMG_COUCH.onload = () => { img_loadedNum += 1; alreadySignal(); };
 		IMG_PLANT.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_TV.onload    = () => { img_loadedNum += 1; alreadySignal(); };
 		IMG_SHELF.onload = () => { img_loadedNum += 1; alreadySignal(); };
 		IMG_RED_CUSHION.onload = () => { img_loadedNum += 1; alreadySignal(); };
 		IMG_BLUE_CUSHION.onload = () => { img_loadedNum += 1; alreadySignal(); };
@@ -78,11 +80,12 @@ function onLoad() {
 		if( img_loadedNum < IMG_LOADED_MAX ) return; // まだ全画像をロードできてないので描画しない
 
 		ctx.drawImage( IMG_BACK, 0, 0, IMG_BACK.naturalWidth, IMG_BACK.naturalHeight );
-		ctx.drawImage( IMG_PLANT, 0, 0, IMG_PLANT.naturalWidth, IMG_PLANT.naturalHeight, 146, 175, IMG_PLANT.naturalWidth, IMG_PLANT.naturalHeight, );
-		ctx.drawImage( IMG_COUCH, 0, 0, IMG_COUCH.naturalWidth, IMG_COUCH.naturalHeight, 0, 244, IMG_COUCH.naturalWidth, IMG_COUCH.naturalHeight, );
-		ctx.drawImage( IMG_SHELF, 0, 0, IMG_SHELF.naturalWidth, IMG_SHELF.naturalHeight, 760, 289, IMG_SHELF.naturalWidth, IMG_SHELF.naturalHeight, );
-		ctx.drawImage( IMG_BLUE_CUSHION, 0, 0, IMG_BLUE_CUSHION.naturalWidth, IMG_BLUE_CUSHION.naturalHeight, 45, 275, IMG_BLUE_CUSHION.naturalWidth, IMG_BLUE_CUSHION.naturalHeight, );
-		ctx.drawImage( IMG_RED_CUSHION, 0, 0, IMG_RED_CUSHION.naturalWidth, IMG_RED_CUSHION.naturalHeight, 0, 315, IMG_RED_CUSHION.naturalWidth, IMG_RED_CUSHION.naturalHeight, );
+		ctx.drawImage( IMG_PLANT, 146, 175 );
+		ctx.drawImage( IMG_COUCH, 0, 244 );
+		ctx.drawImage( IMG_TV, 608, 165 );
+		ctx.drawImage( IMG_SHELF, 760, 289 );
+		ctx.drawImage( IMG_BLUE_CUSHION, 45, 275 );
+		ctx.drawImage( IMG_RED_CUSHION, 0, 315 );
 
 		devs.draw( ctx, devState );
 	};

@@ -8,39 +8,40 @@
 
 let devs = {
 	img_loadedNum: 0,
-	IMG_LOADED_MAX: 6,  // 画像ロードの管理
+	IMG_LOADED_MAX: 9,  // 画像ロードの待機管理
 
 	// デバイス系画像
 	IMG: {},
 
 	////////////////////////////////////////////////////////////////////////////////
-	// index.jsのsetupから呼ばれる
+	// index.jsのsetupから呼ばれる、ロードが終わったことをcallbackで伝える
 	setup: function ( cb ) {
 		// console.log('dev.setup()');
-		devs.IMG.AIRCON_ON = new Image(); devs.IMG.AIRCON_ON.src = './img/Devices.AirCon.On.AirconImage.Body.On.png';
+		devs.IMG.AIRCON_ON  = new Image(); devs.IMG.AIRCON_ON.src  = './img/Devices.AirCon.On.AirconImage.Body.On.png';
 		devs.IMG.AIRCON_OFF = new Image(); devs.IMG.AIRCON_OFF.src = './img/Devices.AirCon.On.AirconImage.Body.Off.png';
-		devs.IMG.LIGHT_ON  = new Image(); devs.IMG.LIGHT_ON.src = './img/Devices.FloorLight.On.LightPower.On.png';
-		devs.IMG.LIGHT_OFF  = new Image(); devs.IMG.LIGHT_OFF.src = './img/Devices.FloorLight.On.LightPower.Off.png';
-		devs.IMG.CURTAIN_OPEN  = new Image(); devs.IMG.CURTAIN_OPEN.src = './img/Devices.Curtain.On.Open.png';
+		devs.IMG.LIGHT_ON  = new Image(); devs.IMG.LIGHT_ON.src  = './img/Devices.FloorLight.On.LightPower.On.png';
+		devs.IMG.LIGHT_OFF = new Image(); devs.IMG.LIGHT_OFF.src = './img/Devices.FloorLight.On.LightPower.Off.png';
+		devs.IMG.CURTAIN_OPEN   = new Image(); devs.IMG.CURTAIN_OPEN.src  = './img/Devices.Curtain.On.Open.png';
 		devs.IMG.CURTAIN_CLOSE  = new Image(); devs.IMG.CURTAIN_CLOSE.src = './img/Devices.Curtain.On.Close.png';
+		devs.IMG.TERMOMETER_LOW = new Image(); devs.IMG.TERMOMETER_LOW.src = './img/Sensors.RoomTempSensor.On.RoomTempDisp.Low.png';
+		devs.IMG.TERMOMETER_MID = new Image(); devs.IMG.TERMOMETER_MID.src = './img/Sensors.RoomTempSensor.On.RoomTempDisp.Mid.png';
+		devs.IMG.TERMOMETER_HI  = new Image(); devs.IMG.TERMOMETER_HI.src  = './img/Sensors.RoomTempSensor.On.RoomTempDisp.Hi.png';
 
-		devs.IMG.AIRCON_ON.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_ON.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.AIRCON_OFF.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
-		devs.IMG.LIGHT_ON.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.LIGHT_ON.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.LIGHT_OFF.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
-		devs.IMG.CURTAIN_OPEN.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.CURTAIN_OPEN.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.CURTAIN_CLOSE.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.TERMOMETER_LOW.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.TERMOMETER_MID.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.TERMOMETER_HI.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 	},
 
 
 
 	////////////////////////////////////////////////////////////////////////////////
 	// 描画
-
-	// div.draw()で使う内部関数
-	drawObj: function( ctx, img, x, y ) {
-		ctx.drawImage( img, 0, 0, img.naturalWidth, img.naturalHeight, x, y, img.naturalWidth, img.naturalHeight, );
-	},
 
 	// エアコン描画
 	drawAircon: function (ctx, state) {
@@ -54,7 +55,7 @@ let devs = {
 			break;
 
 			default:
-			console.error('dev.draw() unknown state:', state);
+			console.error('devs.draw() unknown state:', state);
 			break;
 		}
 	},
@@ -70,7 +71,7 @@ let devs = {
 			break;
 
 			default:
-			console.error('dev.draw() unknown state:', state);
+			console.error('devs.draw() unknown state:', state);
 			break;
 		}
 	},
@@ -86,7 +87,7 @@ let devs = {
 			break;
 
 			default:
-			console.error('dev.draw() unknown state:', state);
+			console.error('devs.draw() unknown state:', state);
 			break;
 		}
 	},
@@ -95,6 +96,15 @@ let devs = {
 	},
 
 	drawThermometer: function (ctx, state) {
+		// let temp = state['e0'];
+		let temp = 25; // debug
+		if( temp < 20 ) {  // low
+			ctx.drawImage( devs.IMG.TERMOMETER_LOW, 167, 49 );
+		}else if( temp < 26 ) { // mid
+			ctx.drawImage( devs.IMG.TERMOMETER_MID, 167, 49 );
+		}else{  // high
+			ctx.drawImage( devs.IMG.TERMOMETER_HI, 167, 49 );
+		}
 	},
 
 	drawSmartmeter: function (ctx, state) {
@@ -105,7 +115,7 @@ let devs = {
 	draw: function( ctx, state ) {
 		if( devs.img_loadedNum < devs.IMG_LOADED_MAX ) return; // まだ全画像をロードできてないので描画しない
 
-		console.log('dev.draw() state:', state);
+		console.log('devs.draw() state:', state);
 
 		devs.drawAircon( ctx, state.aircon );
 		devs.drawLight( ctx, state.light );
