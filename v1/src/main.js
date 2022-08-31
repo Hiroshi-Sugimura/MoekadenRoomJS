@@ -37,8 +37,8 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	// width: 855,
-	width: 1255,
+	// width: 855,  // product
+	width: 1255,  // debug
 	height: 487,
 	debug: true
 };
@@ -46,6 +46,31 @@ let config = {
 
 //////////////////////////////////////////////////////////////////////
 // ECHONET Lite管理
+
+let devState = {
+	'013001': {  // aircon
+		'80': '31',
+		'b0': '42',
+		'b3': '20'
+	},
+	'029001': {  // lighting
+		'80': '31'
+	},
+	'026001': {  // blind = curtain
+		'e0': '41'
+	},
+	'026f01': {  // electnic lock
+		'e0': '41'
+	},
+	'001101': {  // thermometer
+		'e0': ['00', '220']
+	},
+	'028801': {  // smart meter
+		'e1': '02',
+		'e7': '10'
+	}
+};
+
 let ELStart = function() {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
@@ -62,21 +87,19 @@ let ELStart = function() {
 //////////////////////////////////////////////////////////////////////
 // Communication for Electron's Renderer process
 //////////////////////////////////////////////////////////////////////
-// IPC 受信から非同期で実行
-ipcMain.on('to-main', function (event, req) {
-	// メッセージが来たとき
-	let c = JSON.parse(req);
-
-	switch (c.cmd) {
-		default:
-		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <-', c.cmd, ', arg:', c.arg):0;
-		break;
-	}
-});
-
-
 ipcMain.handle( 'already', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
+
+	// 一旦初期値を送る
+	sendIPCMessage( 'draw', {
+		aircon: devState['013001'],
+		light: devState['029001'],
+		curtain: devState['026001'],
+		lock: devState['026f01'],
+		thermometer: devState['001101'],
+		smartmeter: devState['028801']
+	} );
+
 	ELStart();
 });
 
@@ -134,6 +157,7 @@ app.on("activate", () => {
 // window全部閉じたらappも終了する
 app.on('window-all-closed', async () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.window-all-closed'):0;
+	mainEL.api.release();
 	app.quit();	// macだろうとプロセスはkillしちゃう
 });
 

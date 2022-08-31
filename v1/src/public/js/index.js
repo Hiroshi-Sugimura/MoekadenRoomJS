@@ -15,12 +15,11 @@ window.addEventListener('load', onLoad);
 function onLoad() {
 	console.log('## onLoad index.js');
 
-	// 画像
-
 	// 内部変数
+	// デバイスの状態管理
+	let _alreadySignal = false;
 
 	// HTML内部とリンク，タブ制御
-
 
 
 	//////////////////////////////////////////////////////////////////
@@ -28,7 +27,8 @@ function onLoad() {
 	let can = document.getElementById('canvas');
 	let ctx = can.getContext('2d');
 
-	let img_loadedNum = 0;	let IMG_LOADED_MAX = 6;  // 画像ロードの管理
+	let img_loadedNum = 0;
+	let IMG_LOADED_MAX = 6;  // 画像ロードの管理
 
 	// 固定/背景画像
 	let IMG_BACK	= new Image();		IMG_BACK.src = './img/Background.png';
@@ -40,19 +40,41 @@ function onLoad() {
 	// デバイス関係の設定は devs.json に逃がした
 
 	// 初回のセットアップ、画像ロード
-	async function setup() {
-		IMG_BACK.onload = () => { img_loadedNum += 1; draw(); };
-		IMG_COUCH.onload = () => { img_loadedNum += 1; draw(); };
-		IMG_PLANT.onload = () => { img_loadedNum += 1; draw(); };
-		IMG_SHELF.onload = () => { img_loadedNum += 1; draw(); };
-		IMG_RED_CUSHION.onload = () => { img_loadedNum += 1; draw(); };
-		IMG_BLUE_CUSHION.onload = () => { img_loadedNum += 1; draw(); };
+	function setup() {
+		console.log('setup()');
+		IMG_BACK.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_COUCH.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_PLANT.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_SHELF.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_RED_CUSHION.onload = () => { img_loadedNum += 1; alreadySignal(); };
+		IMG_BLUE_CUSHION.onload = () => { img_loadedNum += 1; alreadySignal(); };
 
+		devs.setup( () => {
+			console.log('dev.setup() callback()');
+			alreadySignal();
+		});
 		return;
-	}
+	};
+
+	function alreadySignal() {
+		// まだ全画像をロードできてないので描画しない
+		if( img_loadedNum < IMG_LOADED_MAX ) return;
+		if( devs.img_loadedNum < devs.IMG_LOADED_MAX ) return;
+
+		console.log('alreadySignal() _alreadySignal:', _alreadySignal);
+
+		if( !_alreadySignal ) {  // 最初の描画が終わったら準備完了としてmainが動く
+			console.log('send already()');
+			window.ipc.already();
+			_alreadySignal = true;
+			return;
+		}
+	};
 
 
-	function draw() {
+	function draw( devState ) {
+		console.log('draw() img_loadedNum:', img_loadedNum);
+
 		if( img_loadedNum < IMG_LOADED_MAX ) return; // まだ全画像をロードできてないので描画しない
 
 		ctx.drawImage( IMG_BACK, 0, 0, IMG_BACK.naturalWidth, IMG_BACK.naturalHeight );
@@ -61,6 +83,8 @@ function onLoad() {
 		ctx.drawImage( IMG_SHELF, 0, 0, IMG_SHELF.naturalWidth, IMG_SHELF.naturalHeight, 760, 289, IMG_SHELF.naturalWidth, IMG_SHELF.naturalHeight, );
 		ctx.drawImage( IMG_BLUE_CUSHION, 0, 0, IMG_BLUE_CUSHION.naturalWidth, IMG_BLUE_CUSHION.naturalHeight, 45, 275, IMG_BLUE_CUSHION.naturalWidth, IMG_BLUE_CUSHION.naturalHeight, );
 		ctx.drawImage( IMG_RED_CUSHION, 0, 0, IMG_RED_CUSHION.naturalWidth, IMG_RED_CUSHION.naturalHeight, 0, 315, IMG_RED_CUSHION.naturalWidth, IMG_RED_CUSHION.naturalHeight, );
+
+		devs.draw( ctx, devState );
 	};
 
 
@@ -74,18 +98,11 @@ function onLoad() {
 		switch (c.cmd) {
 			//----------------------------------------------
 			// EL関連
-			case "fclEL":
-			console.log( 'main -> fclEL:', c.arg );
-			window.renewFacilitiesEL( c.arg );
+			case "draw":
+			console.log( 'main -> draw:', c.arg );
+			// window.renewFacilitiesEL( c.arg );
+			draw( c.arg );
 			break;
-
-			//----------------------------------------------
-			// 部屋環境グラフ
-			case "renewRoomEnvNetatmo":
-			// console.log( 'main -> newRoomEnvNetatmo:', c.arg);   // ログ多すぎる
-			window.renewRoomEnvNetatmo( c.arg );
-			break;
-
 
 			//----------------------------------------------
 			// HEMS-Logger全体
@@ -98,8 +115,6 @@ function onLoad() {
 			console.log('main -> unknown cmd:', c.cmd, "arg:", c.arg);
 			break;
 		}
-
-		draw();
 
 	});
 
@@ -114,9 +129,5 @@ function onLoad() {
 	};
 
 	// この関数の最後に呼ぶ
-	// 準備できたことをmainプロセスに伝える
 	setup();
-	draw();
-	window.ipc.already();
-
 };
