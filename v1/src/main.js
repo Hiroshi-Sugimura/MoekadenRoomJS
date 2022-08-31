@@ -37,8 +37,9 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	width: 1024,
-	height: 768,
+	// width: 855,
+	width: 1255,
+	height: 487,
 	debug: true
 };
 

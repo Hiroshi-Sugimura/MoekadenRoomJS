@@ -1,21 +1,18 @@
+html {
+	margin: 0;
+	height: 100%;
+	width: 100%;
+}
+
 body {
-  display: flex;
-  flex-flow: column;
-  min-height: 100vh;
+	margin: 0;
+	height: 100%;
+	width: 100%;
 }
 
-main {
-  flex: 1;
+canvas {
+	margin: 0;
+	height: 480px;
+	width: 854px;
 }
 
-.column .card .card-header .card-header-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.column .card .card-content .content {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
