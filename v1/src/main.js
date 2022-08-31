@@ -25,8 +25,8 @@ const isDevelopment = process.env.NODE_ENV == 'development'
 //////////////////////////////////////////////////////////////////////
 // 追加ライブラリ
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
-const Store = require('electron-store');
 const cron = require('node-cron');
+const mainEL = require('./mainEL');
 require('date-utils');
 
 
@@ -48,15 +48,10 @@ let config = {
 let ELStart = function() {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
-	if( config.EL.enabled == false ) {
-		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart() EL is desabled.'):0;
-		return;
-	}
-
 	// mainEL初期設定
 	mainEL.start( {network: config.network, EL: config.EL},
 				  (rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
-					  		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
+					  config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
 				  },
 				  (facilities) => {  // change facilities, 全体監視して変更があったときに全体データとして呼ばれる
 					  // 特に何もしない
@@ -110,26 +105,25 @@ async function createWindow() {
 
 	// window closeする処理にひっかけて直前処理
 	mainWindow.on('close', async () => {
-		console.log('# close');
-		await writeConfigFile();
+		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.mainWindow.on.close'):0;
 	});
 
 	// window closeした後にひっかけて直後処理
 	mainWindow.on('closed', async () => {
-		console.log( '# closed' );
+		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.mainWindow.on.closed'):0;
 		mainWindow = null;
 	});
 };
 
 app.on('ready', async () => {
-	console.log('# ready');
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.ready'):0;
 	createWindow();
 });
 
 // アプリケーションがアクティブになった時の処理
 // （Macだと、Dockがクリックされた時）
 app.on("activate", () => {
-	console.log('# activate');
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.active'):0;
 	// メインウィンドウが消えている場合は再度メインウィンドウを作成する
 	if (mainWindow === null) {
 		createWindow();
@@ -138,7 +132,7 @@ app.on("activate", () => {
 
 // window全部閉じたらappも終了する
 app.on('window-all-closed', async () => {
-	console.log('# window-all-close');
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.window-all-closed'):0;
 	app.quit();	// macだろうとプロセスはkillしちゃう
 });
 
