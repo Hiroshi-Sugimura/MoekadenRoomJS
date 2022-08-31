@@ -14,7 +14,7 @@ const fs = require('fs');
 
 //////////////////////////////////////////////////////////////////////
 // 基本設定，electronのファイル読み込み対策，developmentで変更できるようにした（けどつかってない）
-const appname  = 'OmronEnvStore';
+const appname  = 'MoekadenRoomJS';
 const appDir   = process.env.NODE_ENV === 'development' ? __dirname : __dirname;
 const isWin    = process.platform == "win32" ? true : false;
 const isMac    = process.platform == "darwin" ? true : false;
@@ -26,10 +26,6 @@ const isDevelopment = process.env.NODE_ENV == 'development'
 // 追加ライブラリ
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const Store = require('electron-store');
-const { sqlite3, omronModel } = require('./models/localDBModels');   // DBデータと連携
-const { Op } = require("sequelize");
-
-const omron = require('usb-2jcie-bu');
 const cron = require('node-cron');
 require('date-utils');
 
