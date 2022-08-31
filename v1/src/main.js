@@ -39,91 +39,45 @@ app.disableHardwareAcceleration();
 let mainWindow = null;
 
 
-//////////////////////////////////////////////////////////////////////
-// config
-// configファイルのデフォルトの値、schemaによるdefaults optionはうまく動かない
-/*
-const configSchema = {
-	omron: {
-		comPort: {
-			type: 'string',
-			default: "auto"
-		},
-		ledColor: {
-			type: 'string',
-			default: "green"
-		},
-	}
-	window: {
-		width: {
-			type: 'number',
-			default: 1024
-		},
-		height: {
-			type: 'number',
-			default: 768
-		}
-	}
+// アプリのconfig
+let config = {
+	debug: true
 };
-*/
-
-const config = {
-	omron: {
-		comPort: "auto",
-		ledColor: "green"
-	},
-	window: {
-		width: 1024,
-		height: 768
-	}
-};
-
-// const store = new Store({configSchema});
-const store = new Store();
-
-function readConfigFile() {
-	config.omron = store.get( 'omron', config.omron);
-	config.window = store.get( 'window', config.window);
-	console.log(config);
-}
-
-function writeConfigFile() {
-	store.set( 'omron', config.omron );
-	store.set( 'window.width', mainWindow.getSize()[0]);
-	store.set( 'window.height', mainWindow.getSize()[1]);
-};
-
 
 
 //////////////////////////////////////////////////////////////////////
-// Omron管理
-let omronStart = function () {
-	// 2秒毎にチェック
-	cron.schedule('*/2 * * * * *', () => {
-		omron.start(  (sensorData, error) => {
-			if( error ) {
-				if( error == 'INF: port is closed.' ) {
-					sendIPCMessage( 'omronDisconnected', null );
-				}
-				// console.error( error );
-				return;
-			}
-			// console.log( '----------------------------' );
-			let dt = new Date();
-			// console.log( dt );
-			// console.dir( sensorData );
-			sendIPCMessage( 'omron', sensorData );
-			omronModel.create( {date: dt, temperature: sensorData.temperature, humidity: sensorData.humidity,
-				anbient_light: sensorData.anbient_light, pressure: sensorData.pressure, noise: sensorData.noise,
-				etvoc: sensorData.etvoc, eco2: sensorData.eco2, discomfort_index: sensorData.discomfort_index,
-				heat_stroke: sensorData.heat_stroke} );
-		});
+// ECHONET Lite管理
+let ELStart = function() {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
-		omron.requestData();
-	});
+	if( config.EL.enabled == false ) {
+		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart() EL is desabled.'):0;
+		return;
+	}
+
+	// mainEL初期設定
+	mainEL.start( {network: config.network, EL: config.EL},
+				  (rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
+					  // database
+					  // 確認
+					  let rawdata = mainEL.api.getSeparatedString_ELDATA(els);
+
+					  mainEL.conv.elsAnarysis(els, function( eljson ) {
+						  for (const [key, value] of Object.entries(eljson.EDT) )
+						  {
+							  eldataModel.create({ srcip: rinfo.address, srcmac:mainArp.toMAC(rinfo.address), seoj: eljson.SEOJ, deoj: eljson.DEOJ, esv: eljson.ESV, epc: key, edt: value });
+						  }
+					  } );
+					  elrawModel.create({ srcip: rinfo.address, srcmac:mainArp.toMAC(rinfo.address), dstip:localaddresses[0], dstmac:mainArp.toMAC(localaddresses[0]), rawdata: rawdata, seoj: els.SEOJ, deoj: els.DEOJ, esv: els.ESV, opc: els.OPC, detail: els.DETAIL });
+				  },
+				  (facilities) => {  // change facilities, 全体監視して変更があったときに全体データとして呼ばれる
+					  persist.elData = facilities;
+					  config.EL.observationDevs = mainEL.observationDevs;
+					  mainEL.conv.refer( objectSort(facilities) , function (devs) {
+						  sendIPCMessage( "fclEL", objectSort(devs) );
+					  });
+				  });
 };
-
-
 
 //////////////////////////////////////////////////////////////////////
 // Communication for Electron's Renderer process
@@ -131,21 +85,13 @@ let omronStart = function () {
 // IPC 受信から非同期で実行
 ipcMain.on('to-main', function (event, arg) {
 	// メッセージが来たとき
-	console.log('---  sended from Renderer.');
-	console.log(arg);
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
 
 	let c = JSON.parse(arg);
 
 	switch (c.cmd) {
-		//----------------------------------
-		// 設定保存
-		case 'configSave':
-		console.log('configSave start:');
-		writeConfigFile();
-		break;
-
 		default:
-		console.log("## get error cmd : " + arg);
+		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
 		break;
 	}
 });
@@ -222,16 +168,6 @@ app.on('window-all-closed', async () => {
 const menuItems = [{
 	label: appname,
 	submenu: [
-		{
-			label: 'Preferences...',
-			click: function () { shell.showItemInFolder( app.getPath('userData') ); }
-			// click: function () { store.openInEditor(); }
-		},
-		{
-			label: 'Open Config.json',
-			accelerator: isMac ? 'Command+,' : 'Control+,',
-			click: async function () { await writeConfigFile(); store.openInEditor(); }
-		},
 		{
 			label: 'Quit',
 			accelerator: isMac ? 'Command+Q' : 'Alt+F4',

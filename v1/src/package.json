@@ -1,18 +1,14 @@
 {
-	"name": "OmronEnvStore",
-	"version": "2.0.0",
-	"description": "This app provides Sensing and Database for USB environment sensor (2JCIE-BU) producted by OMRON.",
+	"name": "MoekadenRoomJS",
+	"version": "1.0.0",
+	"description": "This app is An ECHONET Lite Emulator.",
 	"author": "Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)",
 	"main": "main.js",
 	"homepage": "./",
 	"dependencies": {
 		"date-utils": "^1.2.21",
 		"electron-log": "^4.4.8",
-		"node-cron": "^3.0.1",
-		"sequelize": "^6.21.3",
-		"serialport": "^10.4.0",
-		"sqlite3": "^5.0.11",
-		"usb-2jcie-bu": "^0.1.2"
+		"node-cron": "^3.0.1"
 	},
 	"devDependencies": {
 		"devtron": "^1.4.0",
@@ -28,7 +24,7 @@
 		"preinstall": "npm i --location=global electron electron-rebuild"
 	},
 	"build": {
-		"appId": "net.sugi-lab.OmronEnvStore",
+		"appId": "net.sugi-lab.MoekadenRoomJS",
 		"extraResources": [
 			{
 				"from": "./extraResources/",
