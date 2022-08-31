@@ -37,9 +37,9 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	// width: 855,  // product
-	width: 1255,  // debug
-	height: 487,
+	width: 860,  // product, innerWidth:854 + 16
+	// width: 1255,  // debug
+	height: 529,   // innerHight:480 + 59
 	debug: true
 };
 
@@ -78,11 +78,26 @@ let ELStart = function() {
 	mainEL.start( {network: config.network, EL: config.EL},
 				  (rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
 					  config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
+
+
+
+					  // 機器の状態変化があれば画面に反映
+					  sendIPCMessage( 'draw', {
+						  aircon: devState['013001'],
+						  light: devState['029001'],
+						  curtain: devState['026001'],
+						  lock: devState['026f01'],
+						  thermometer: devState['001101'],
+						  smartmeter: devState['028801']
+					  } );
+
 				  },
 				  (facilities) => {  // change facilities, 全体監視して変更があったときに全体データとして呼ばれる
 					  // 特に何もしない
 				  });
 };
+
+
 
 //////////////////////////////////////////////////////////////////////
 // Communication for Electron's Renderer process
@@ -112,6 +127,7 @@ async function createWindow() {
 	mainWindow = new BrowserWindow({
 		width:  config.width,
 		height: config.height,
+		resizable: false,
 		webPreferences: {
 			nodeIntegration: false, // default:false
 			contextIsolation: true, // default:true
