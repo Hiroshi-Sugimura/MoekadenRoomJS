@@ -37,6 +37,8 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
+	width: 1024,
+	height: 768,
 	debug: true
 };
 
@@ -54,24 +56,10 @@ let ELStart = function() {
 	// mainEL初期設定
 	mainEL.start( {network: config.network, EL: config.EL},
 				  (rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
-					  // database
-					  // 確認
-					  let rawdata = mainEL.api.getSeparatedString_ELDATA(els);
-
-					  mainEL.conv.elsAnarysis(els, function( eljson ) {
-						  for (const [key, value] of Object.entries(eljson.EDT) )
-						  {
-							  eldataModel.create({ srcip: rinfo.address, srcmac:mainArp.toMAC(rinfo.address), seoj: eljson.SEOJ, deoj: eljson.DEOJ, esv: eljson.ESV, epc: key, edt: value });
-						  }
-					  } );
-					  elrawModel.create({ srcip: rinfo.address, srcmac:mainArp.toMAC(rinfo.address), dstip:localaddresses[0], dstmac:mainArp.toMAC(localaddresses[0]), rawdata: rawdata, seoj: els.SEOJ, deoj: els.DEOJ, esv: els.ESV, opc: els.OPC, detail: els.DETAIL });
+					  		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
 				  },
 				  (facilities) => {  // change facilities, 全体監視して変更があったときに全体データとして呼ばれる
-					  persist.elData = facilities;
-					  config.EL.observationDevs = mainEL.observationDevs;
-					  mainEL.conv.refer( objectSort(facilities) , function (devs) {
-						  sendIPCMessage( "fclEL", objectSort(devs) );
-					  });
+					  // 特に何もしない
 				  });
 };
 
@@ -79,23 +67,21 @@ let ELStart = function() {
 // Communication for Electron's Renderer process
 //////////////////////////////////////////////////////////////////////
 // IPC 受信から非同期で実行
-ipcMain.on('to-main', function (event, arg) {
+ipcMain.on('to-main', function (event, req) {
 	// メッセージが来たとき
-	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
-
-	let c = JSON.parse(arg);
+	let c = JSON.parse(req);
 
 	switch (c.cmd) {
 		default:
-		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
+		config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <-', c.cmd, ', arg:', c.arg):0;
 		break;
 	}
 });
 
 
 ipcMain.handle( 'already', async (event, arg) => {
-	console.log('already', arg);
-	omronStart();
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already'):0;
+	ELStart();
 });
 
 
@@ -103,13 +89,10 @@ ipcMain.handle( 'already', async (event, arg) => {
 // foreground
 // ここがEntrypointと考えても良い
 async function createWindow() {
-	// 何はともあれDBの準備，SQLite の初期化の完了を待つ
-	await sqlite3.sync().then(() => console.log("Local DB is ready."));
-
 	// 画面の起動
 	mainWindow = new BrowserWindow({
-		width: store.get('window.width'),
-		height: store.get('window.height'),
+		width:  config.width,
+		height: config.height,
 		webPreferences: {
 			nodeIntegration: false, // default:false
 			contextIsolation: true, // default:true
@@ -140,7 +123,6 @@ async function createWindow() {
 
 app.on('ready', async () => {
 	console.log('# ready');
-	await readConfigFile();
 	createWindow();
 });
 
