@@ -16,9 +16,25 @@ window.addEventListener('load', onLoad);
 function onLoad() {
 	console.log('## onLoad index.js');
 
+// 画像
+	let IMG_BACK = new Image();
+	IMG_BACK.src = './img/Background.png'
+
 	// 内部変数
 
 	// HTML内部とリンク，タブ制御
+
+
+
+	//////////////////////////////////////////////////////////////////
+	// canvas関係
+	let can = document.getElementById('canvas');
+	let ctx = can.getContext('2d');
+
+	function draw() {
+		ctx.drawImage( IMG_BACK, 0, 0);
+	};
+
 
 
 	//////////////////////////////////////////////////////////////////
@@ -54,6 +70,8 @@ function onLoad() {
 			console.log('main -> unknown cmd:', c.cmd, "arg:", c.arg);
 			break;
 		}
+
+		draw();
 	});
 
 
