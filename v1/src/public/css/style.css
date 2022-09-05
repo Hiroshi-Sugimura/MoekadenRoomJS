@@ -1,4 +1,10 @@
+/*********************************************************************
+	Style Seet
+	Copyright (C) Hiroshi SUGIMURA 2022.09.05.
+	IoT programming Lab., Kanagawa Institute of Technology
+ *********************************************************************/
 html {
+	position: relative;
 	margin: 0;
 	height: 100%;
 	width: 100%;
@@ -6,14 +12,161 @@ html {
 }
 
 body {
+	position: relative;
+	z-index: 0;
 	margin: 0;
 	height: 100%;
 	width: 100%;
 }
 
+span .canvas{
+	position: relative;
+}
+
 canvas {
-	margin: 0;
+	position: relative;
+	margin: 10;
 	height: 480px;
 	width: 854px;
+	z-index: 0;
+}
+
+button {
+	z-index: 20;
+	font-size: 12px;
+	text-align: center;
+	color: #ffffff;
+	background: #8080ff;
+	border-color: #000000;
+	border-style: dotted;
+	padding: 0px;
+}
+
+.selected {
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: bold;
+	background: #dd3030;
+	border-color: #000000;
+	border-style: solid;
+}
+
+
+/* 鍵 */
+#btnLockkey {
+	position: fixed;
+	left: 740px;
+	top: 400px;
+	width: 80px;
+}
+
+#btnUnlockkey {
+	position: fixed;
+	left: 740px;
+	top: 430px;
+	width: 80px;
+}
+
+/* カーテン */
+#btnOpencurtain {
+	position: fixed;
+	left: 500px;
+	top: 100px;
+	width: 90px;
+}
+
+#btnClosecurtain {
+	position: fixed;
+	left: 500px;
+	top: 130px;
+	width: 90px;
+}
+
+/* ライト */
+#btnOnlight {
+	position: fixed;
+	left: 72px;
+	top: 200px;
+	width: 60px;
+}
+
+#btnOfflight {
+	position: fixed;
+	left: 72px;
+	top: 230px;
+	width: 60px;
+}
+
+/* 温度 */
+#btnUptemperature {
+	position: fixed;
+	left: 195px;
+	top: 50px;
+	width: 45px;
+}
+
+#btnDowntemperature {
+	position: fixed;
+	left: 195px;
+	top: 80px;
+	width: 45px;
+}
+
+/* エアコン上段 */
+#btnOnaircon {
+	position: fixed;
+	left: 560px;
+	top: 10px;
+	width: 40px;
+}
+#btnOffaircon {
+	position: fixed;
+	left: 605px;
+	top: 10px;
+	width: 40px;
+}
+#btnUpaircon {
+	position: fixed;
+	left: 695px;
+	top: 10px;
+	width: 40px;
+}
+#btnDownaircon {
+	position: fixed;
+	left: 740px;
+	top: 10px;
+	width: 40px;
+}
+
+/* エアコン下段 */
+#btnAutoaircon {
+	position: fixed;
+	left: 560px;
+	top: 35px;
+	width: 40px;
+}
+#btnCoolaircon {
+	position: fixed;
+	left: 605px;
+	top: 35px;
+	width: 40px;
+}
+#btnHeataircon {
+	position: fixed;
+	left: 650px;
+	top: 35px;
+	width: 40px;
+}
+#btnDryaircon {
+	position: fixed;
+	left: 695px;
+	top: 35px;
+	width: 40px;
+}
+#btnWindaircon {
+	position: fixed;
+	left: 740px;
+	top: 35px;
+	width: 40px;
 }
 

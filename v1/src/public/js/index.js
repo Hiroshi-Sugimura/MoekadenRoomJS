@@ -101,6 +101,232 @@ function onLoad() {
 		devs.draw( ctx, devState );
 	};
 
+	//////////////////////////////////////////////////////////////////
+	// GUIのボタン処理
+	// 鍵
+	const btnLockkey = document.getElementById('btnLockkey');
+	btnLockkey.addEventListener('click', btnLockkey_Click);
+	const btnUnlockkey = document.getElementById('btnUnlockkey');
+	btnUnlockkey.addEventListener('click', btnUnlockkey_Click);
+
+	function btnLockkey_Click() {
+		console.log( 'btnLockkey_Click' );
+		if( btnUnlockkey.classList.contains('selected') ) {
+			btnUnlockkey.classList.remove('selected')
+		}
+
+		if( !btnLockkey.classList.contains('selected') ) {
+			btnLockkey.classList.add('selected')
+		}
+
+	}
+
+	function btnUnlockkey_Click() {
+		console.log( 'btnUnlockkey_Click' );
+		if( btnLockkey.classList.contains('selected') ) {
+			btnLockkey.classList.remove('selected')
+		}
+		if( !btnUnlockkey.classList.contains('selected') ) {
+			btnUnlockkey.classList.add('selected')
+		}
+	}
+
+
+	// カーテン
+	const btnOpencurtain = document.getElementById('btnOpencurtain');
+	btnOpencurtain.addEventListener('click', btnOpencurtain_Click);
+	const btnClosecurtain = document.getElementById('btnClosecurtain');
+	btnClosecurtain.addEventListener('click', btnClosecurtain_Click);
+
+	function btnClosecurtain_Click() {
+		console.log( 'btnClosecurtain_Click' );
+		if( btnOpencurtain.classList.contains('selected') ) {
+			btnOpencurtain.classList.remove('selected')
+		}
+
+		if( !btnClosecurtain.classList.contains('selected') ) {
+			btnClosecurtain.classList.add('selected')
+		}
+
+	}
+
+	function btnOpencurtain_Click() {
+		console.log( 'btnOpencurtain_Click' );
+		if( btnClosecurtain.classList.contains('selected') ) {
+			btnClosecurtain.classList.remove('selected')
+		}
+		if( !btnOpencurtain.classList.contains('selected') ) {
+			btnOpencurtain.classList.add('selected')
+		}
+	}
+
+	// ライト
+	const btnOnlight = document.getElementById('btnOnlight');
+	btnOnlight.addEventListener('click', btnOnlight_Click);
+	const btnOfflight = document.getElementById('btnOfflight');
+	btnOfflight.addEventListener('click', btnOfflight_Click);
+
+	function btnOfflight_Click() {
+		console.log( 'btnOfflight_Click' );
+		if( btnOnlight.classList.contains('selected') ) {
+			btnOnlight.classList.remove('selected')
+		}
+
+		if( !btnOfflight.classList.contains('selected') ) {
+			btnOfflight.classList.add('selected')
+		}
+
+	}
+
+	function btnOnlight_Click() {
+		console.log( 'btnOnilght_Click' );
+		if( btnOfflight.classList.contains('selected') ) {
+			btnOfflight.classList.remove('selected')
+		}
+		if( !btnOnlight.classList.contains('selected') ) {
+			btnOnlight.classList.add('selected')
+		}
+	}
+
+
+	// エアコン上段
+	const btnOnaircon = document.getElementById('btnOnaircon');
+	btnOnaircon.addEventListener('click', btnOnaircon_Click);
+	const btnOffaircon = document.getElementById('btnOffaircon');
+	btnOffaircon.addEventListener('click', btnOffaircon_Click);
+
+	function btnOffaircon_Click() {
+		console.log( 'btnOffaircon_Click' );
+		if( btnOnaircon.classList.contains('selected') ) {
+			btnOnaircon.classList.remove('selected')
+		}
+
+		if( !btnOffaircon.classList.contains('selected') ) {
+			btnOffaircon.classList.add('selected')
+		}
+
+	}
+
+	function btnOnaircon_Click() {
+		console.log( 'btnOnaircon_Click' );
+		if( btnOffaircon.classList.contains('selected') ) {
+			btnOffaircon.classList.remove('selected')
+		}
+		if( !btnOnaircon.classList.contains('selected') ) {
+			btnOnaircon.classList.add('selected')
+		}
+	}
+
+	// エアコン下段
+	const btnAutoaircon = document.getElementById('btnAutoaircon');
+	btnAutoaircon.addEventListener('click', btnAutoaircon_Click);
+	const btnCoolaircon = document.getElementById('btnCoolaircon');
+	btnCoolaircon.addEventListener('click', btnCoolaircon_Click);
+	const btnHeataircon = document.getElementById('btnHeataircon');
+	btnHeataircon.addEventListener('click', btnHeataircon_Click);
+	const btnDryaircon = document.getElementById('btnDryaircon');
+	btnDryaircon.addEventListener('click', btnDryaircon_Click);
+	const btnWindaircon = document.getElementById('btnWindaircon');
+	btnWindaircon.addEventListener('click', btnWindaircon_Click);
+
+	function btnAutoaircon_Click() {
+		console.log( 'btnAutoaircon_Click' );
+		if( !btnAutoaircon.classList.contains('selected') ) {
+			btnAutoaircon.classList.add('selected')
+		}
+		if( btnCoolaircon.classList.contains('selected') ) {
+			btnCoolaircon.classList.remove('selected')
+		}
+		if( btnHeataircon.classList.contains('selected') ) {
+			btnHeataircon.classList.remove('selected')
+		}
+		if( btnDryaircon.classList.contains('selected') ) {
+			btnDryaircon.classList.remove('selected')
+		}
+		if( btnWindaircon.classList.contains('selected') ) {
+			btnWindaircon.classList.remove('selected')
+		}
+	}
+
+	function btnCoolaircon_Click() {
+		console.log( 'btnCoolaircon_Click' );
+		if( btnAutoaircon.classList.contains('selected') ) {
+			btnAutoaircon.classList.remove('selected')
+		}
+		if( !btnCoolaircon.classList.contains('selected') ) {
+			btnCoolaircon.classList.add('selected')
+		}
+		if( btnHeataircon.classList.contains('selected') ) {
+			btnHeataircon.classList.remove('selected')
+		}
+		if( btnDryaircon.classList.contains('selected') ) {
+			btnDryaircon.classList.remove('selected')
+		}
+		if( btnWindaircon.classList.contains('selected') ) {
+			btnWindaircon.classList.remove('selected')
+		}
+	}
+
+	function btnHeataircon_Click() {
+		console.log( 'btnHeataircon_Click' );
+		if( btnAutoaircon.classList.contains('selected') ) {
+			btnAutoaircon.classList.remove('selected')
+		}
+		if( btnCoolaircon.classList.contains('selected') ) {
+			btnCoolaircon.classList.remove('selected')
+		}
+		if( !btnHeataircon.classList.contains('selected') ) {
+			btnHeataircon.classList.add('selected')
+		}
+		if( btnDryaircon.classList.contains('selected') ) {
+			btnDryaircon.classList.remove('selected')
+		}
+		if( btnWindaircon.classList.contains('selected') ) {
+			btnWindaircon.classList.remove('selected')
+		}
+	}
+
+	function btnDryaircon_Click() {
+		console.log( 'btnDryaircon_Click' );
+		if( btnAutoaircon.classList.contains('selected') ) {
+			btnAutoaircon.classList.remove('selected')
+		}
+		if( btnCoolaircon.classList.contains('selected') ) {
+			btnCoolaircon.classList.remove('selected')
+		}
+		if( btnHeataircon.classList.contains('selected') ) {
+			btnHeataircon.classList.remove('selected')
+		}
+		if( !btnDryaircon.classList.contains('selected') ) {
+			btnDryaircon.classList.add('selected')
+		}
+		if( btnWindaircon.classList.contains('selected') ) {
+			btnWindaircon.classList.remove('selected')
+		}
+	}
+
+
+	function btnWindaircon_Click() {
+		console.log( 'btnWindaircon_Click' );
+		if( btnAutoaircon.classList.contains('selected') ) {
+			btnAutoaircon.classList.remove('selected')
+		}
+		if( btnCoolaircon.classList.contains('selected') ) {
+			btnCoolaircon.classList.remove('selected')
+		}
+		if( btnHeataircon.classList.contains('selected') ) {
+			btnHeataircon.classList.remove('selected')
+		}
+		if( btnDryaircon.classList.contains('selected') ) {
+			btnDryaircon.classList.remove('selected')
+		}
+		if( !btnWindaircon.classList.contains('selected') ) {
+			btnWindaircon.classList.add('selected')
+		}
+	}
+
+
+
 
 
 	//////////////////////////////////////////////////////////////////

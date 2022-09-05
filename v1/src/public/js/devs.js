@@ -60,6 +60,7 @@ let devs = {
 		}
 	},
 
+	// ライト描画
 	drawLight: function (ctx, state) {
 		switch( state['80'] ) {
 			case '31':
@@ -76,6 +77,7 @@ let devs = {
 		}
 	},
 
+	// カーテン描画
 	drawCurtain: function (ctx, state) {
 		switch( state['e0'] ) {
 			case '41':
@@ -92,9 +94,11 @@ let devs = {
 		}
 	},
 
+	// 鍵描画
 	drawLock: function (ctx, state) {
 	},
 
+	// 温度計描画
 	drawThermometer: function (ctx, state) {
 		// let temp = state['e0'];
 		let temp = 25; // debug
@@ -107,10 +111,12 @@ let devs = {
 		}
 	},
 
+	// スマメ描画
 	drawSmartmeter: function (ctx, state) {
 	},
 
 
+	//------------------------------------------------------
 	// デバイスを描画する
 	draw: function( ctx, state ) {
 		if( devs.img_loadedNum < devs.IMG_LOADED_MAX ) return; // まだ全画像をロードできてないので描画しない
