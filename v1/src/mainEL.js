@@ -31,12 +31,12 @@ mainEL.api = EL;
 //////////////////////////////////////////////////////////////////////
 // 内部
 // EL受け取った後の処理
-let ELreceived = function( rinfo, els, err ) {
-	if( err ) {
+let ELreceived = function( rinfo, els, error ) {
+	if( error ) {
 		console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() error:', error);
 		console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() rinfo:', rinfo);
 		console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() els:', els);
-		throw err;
+		throw error;
 	}
 
 	// config.EL.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() rinfo:', rinfo, '\nels:', els ):0;
@@ -73,7 +73,7 @@ let ELreceived = function( rinfo, els, err ) {
 		}
 	}
 
-	mainEL.recv_callback(rinfo, els, err);
+	mainEL.recv_callback(rinfo, els, error);
 };
 
 

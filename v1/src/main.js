@@ -91,6 +91,140 @@ let devState = {
 	}
 };
 
+// エアコン
+let getAircon = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['013001'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['013001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setAircon = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['013001'][epc]) { // 持ってるEPCのとき
+			devState['013001'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['013001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+// ライト
+let getLight = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['029001'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['029001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setLight = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['029001'][epc]) { // 持ってるEPCのとき
+			devState['029001'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['029001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+// 鍵
+let getLock = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['026f01'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['026f01'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setLockon = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['026f01'][epc]) { // 持ってるEPCのとき
+			devState['026f01'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['026f01'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+// カーテン
+let getCurtain = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['026001'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['026001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setCurtain = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['026001'][epc]) { // 持ってるEPCのとき
+			devState['026001'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['026001'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+// スマメ
+let getSmartmeter = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['028801'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['028801'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setSmartmeter = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['028801'][epc]) { // 持ってるEPCのとき
+			devState['028801'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['028801'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+// 温度計
+let getThermometer = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['001101'][epc]) { // 持ってるEPCのとき
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x72, mainEL.api.toHexArray(epc), devState['001101'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+let setThermometer = function(rinfo, els) {
+	for (let epc in els.DETAILs) {
+		if (devState['001101'][epc]) { // 持ってるEPCのとき
+			devState['001101'][epc] = els.DETAILs[epc];
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x71, mainEL.api.toHexArray(epc), devState['001101'][epc]);
+		} else { // 持っていないEPCのとき, SNA
+			mainEL.api.replyOPC1(rinfo.address, mainEL.api.toHexArray(els.TID), mainEL.api.toHexArray(els.DEOJ), mainEL.api.toHexArray(els.SEOJ), 0x52, mainEL.api.toHexArray(epc), [0x00]);
+		}
+	}
+};
+
+
+
 let ELStart = function() {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
@@ -99,6 +233,69 @@ let ELStart = function() {
 				  (rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
 					  config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
 
+					  if( els ) {
+						  console.dir( els );
+					  }
+
+					  switch( els.ESV ) {
+						  case '60':  // SET_I
+						  case '61':  // SET_C
+						  switch( els.DEOJ.substr(0,4) ) {
+							  case '0130':  // エアコン
+							  setAircon( rinfo, els );
+							  break;
+
+							  case '0290':  // ライト
+							  setLight( rinfo, els );
+							  break;
+
+							  case '0260':  // カーテン
+							  setCurtain( rinfo, els );
+							  break;
+
+							  case '026f':  // 鍵
+							  setLock( rinfo, els );
+							  break;
+
+							  case '0011':  // 温度計
+							  setThermometer( rinfo, els );
+							  break;
+
+							  case '0288':  // スマメ
+							  setSmartmeter( rinfo, els );
+							  break;
+						  }
+						  break;
+
+						  case '62':  // GET
+						  switch( els.DEOJ.substr(0,4) ) {
+							  case '0130':  // エアコン
+							  getAircon( rinfo, els );
+							  break;
+
+							  case '0290':  // ライト
+							  getLight( rinfo, els );
+							  break;
+
+							  case '0260':  // カーテン
+							  getCurtain( rinfo, els );
+							  break;
+
+							  case '026f':  // 鍵
+							  getLock( rinfo, els );
+							  break;
+
+							  case '0011':  // 温度計
+							  getThermometer( rinfo, els );
+							  break;
+
+							  case '0288':  // スマメ
+							  getSmartmeter( rinfo, els );
+							  break;
+						  }
+						  break;
+					  }
+
 
 					  // 機器の状態変化があれば画面に反映
 					  sendDevState();
@@ -106,6 +303,9 @@ let ELStart = function() {
 				  (facilities) => {  // change facilities, 全体監視して変更があったときに全体データとして呼ばれる
 					  // 特に何もしない
 				  });
+
+	mainEL.api.sendOPC1( '224.0.23.0', '0ef001', '0ef001', '73', '80', '30');
+
 };
 
 
