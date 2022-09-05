@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-//	Copyright (C) Hiroshi SUGIMURA 2022.06.07 (MIT License)
-//	Based on Futomi HATANO 2021.11.11 (MIT License)
-//	Last updated: 2022.06.07
+//	Copyright (C) Hiroshi SUGIMURA 2022.09.05 (MIT License)
+//	Based on OWADA Shigeru 2020.12.24 (MIT License)
 //////////////////////////////////////////////////////////////////////
 'use strict'
 

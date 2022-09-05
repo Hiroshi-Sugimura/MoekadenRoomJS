@@ -3,17 +3,18 @@
 	"version": "1.0.0",
 	"description": "This app is An ECHONET Lite Emulator.",
 	"author": "Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)",
+	"license": "MIT",
 	"main": "main.js",
 	"homepage": "./",
 	"dependencies": {
 		"date-utils": "^1.2.21",
 		"echonet-lite": "^2.7.1",
 		"electron-log": "^4.4.8",
-		"node-cron": "^3.0.1"
+		"node-cron": "^3.0.2"
 	},
 	"devDependencies": {
 		"devtron": "^1.4.0",
-		"electron": "^20.0.0",
+		"electron": "^20.1.1",
 		"electron-rebuild": "^3.2.9",
 		"electron-store": "^8.1.0"
 	},
@@ -32,9 +33,9 @@
 				"to": "extraResources",
 				"filter": [
 					"**/*"
-				]
+					]
 			}
-		],
+			],
 		"win": {
 			"icon": "icons/H_pink.ico",
 			"target": "nsis"
@@ -48,5 +49,5 @@
 	},
 	"files": [
 		"icons/*"
-	]
+		]
 }

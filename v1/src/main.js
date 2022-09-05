@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-//	Copyright (C) Hiroshi SUGIMURA 2018.03.16
-//  Last updated: 2021.09.25
+//	Copyright (C) Hiroshi SUGIMURA 2022.09.05 (MIT License)
+//	Based on OWADA Shigeru 2020.12.24 (MIT License)
 //////////////////////////////////////////////////////////////////////
 'use strict'
 
@@ -24,7 +24,7 @@ const isDevelopment = process.env.NODE_ENV == 'development'
 
 //////////////////////////////////////////////////////////////////////
 // 追加ライブラリ
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, dialog } = require('electron');
 const cron = require('node-cron');
 const mainEL = require('./mainEL');
 require('date-utils');
@@ -565,6 +565,10 @@ const menuItems = [{
 	label: appname,
 	submenu: [
 		{
+			label: 'About this',
+			accelerator: isMac ? 'Command+?' : 'Alt+?',
+			click: function () { aboutThis(); }
+		}, {
 			label: 'Quit',
 			accelerator: isMac ? 'Command+Q' : 'Alt+F4',
 			click: function () { app.quit(); }
@@ -588,8 +592,7 @@ const menuItems = [{
 			label: 'Toggle Developer Tools',
 			accelerator: isMac ? 'Ctrl+Command+I' : 'Control+Shift+I',
 			click: function () { mainWindow.toggleDevTools(); }
-		}
-		]
+		}		]
 }];
 
 
@@ -607,6 +610,18 @@ let sendIPCMessage = function( cmdStr, argStr ) {
 	}
 };
 
+
+// About this
+function aboutThis () {
+	const options = {
+		type: 'info',
+		title: 'MoekadenRoomJS',
+		message: 'MoekadenRoomJS Version 1.0.0',
+		detail: 'This is an ECHONET Lite Emulator, called MoekadenRoomJS.\nIt is based on Moekaden made by SonyCSL, which is MIT License.\n\n- MoekadenRoomJS: https://github.com/Hiroshi-Sugimura/MoekadenRoomJS\n- ModekadenRoom: https://github.com/SonyCSL/MoekadenRoom'
+	};
+
+	dialog.showMessageBox(options);
+}
 
 //////////////////////////////////////////////////////////////////////
 // EOF
