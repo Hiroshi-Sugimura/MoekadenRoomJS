@@ -243,10 +243,10 @@ let devs = {
 			case '31': // OFF
 			ctx.drawImage( devs.IMG.LIGHT_OFF, 47, 84 );
 			if( btnOnlight.classList.contains('selected') ) {
-				btnOnlight.classList.add('selected');
+				btnOnlight.classList.remove('selected');
 			}
 			if( !btnOfflight.classList.contains('selected') ) {
-				btnOfflight.classList.remove('selected');
+				btnOfflight.classList.add('selected');
 			}
 			break;
 
