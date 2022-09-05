@@ -8,7 +8,7 @@
 
 let devs = {
 	img_loadedNum: 0,
-	IMG_LOADED_MAX: 9,  // 画像ロードの待機管理
+	IMG_LOADED_MAX: 15,  // 画像ロードの待機管理
 
 	// デバイス系画像
 	IMG: {},
@@ -17,8 +17,14 @@ let devs = {
 	// index.jsのsetupから呼ばれる、ロードが終わったことをcallbackで伝える
 	setup: function ( cb ) {
 		// console.log('dev.setup()');
+		devs.IMG.AIRCON_BACK = new Image(); devs.IMG.AIRCON_BACK.src  = './img/Devices.AirCon.On.AirconImage.Glow.png';
 		devs.IMG.AIRCON_ON  = new Image(); devs.IMG.AIRCON_ON.src  = './img/Devices.AirCon.On.AirconImage.Body.On.png';
 		devs.IMG.AIRCON_OFF = new Image(); devs.IMG.AIRCON_OFF.src = './img/Devices.AirCon.On.AirconImage.Body.Off.png';
+		devs.IMG.AIRCON_AUTO = new Image(); devs.IMG.AIRCON_AUTO.src = './img/Devices.AirCon.On.AirconImage.Wind.Cool.png';
+		devs.IMG.AIRCON_COOL = new Image(); devs.IMG.AIRCON_COOL.src = './img/Devices.AirCon.On.AirconImage.Wind.Cool.png';
+		devs.IMG.AIRCON_HEAT = new Image(); devs.IMG.AIRCON_HEAT.src = './img/Devices.AirCon.On.AirconImage.Wind.Hot.png';
+		devs.IMG.AIRCON_DRY = new Image(); devs.IMG.AIRCON_DRY.src = './img/Devices.AirCon.On.AirconImage.Wind.Wind.png';
+		devs.IMG.AIRCON_WIND = new Image(); devs.IMG.AIRCON_WIND.src = './img/Devices.AirCon.On.AirconImage.Wind.Dry.png';
 		devs.IMG.LIGHT_ON  = new Image(); devs.IMG.LIGHT_ON.src  = './img/Devices.FloorLight.On.LightPower.On.png';
 		devs.IMG.LIGHT_OFF = new Image(); devs.IMG.LIGHT_OFF.src = './img/Devices.FloorLight.On.LightPower.Off.png';
 		devs.IMG.CURTAIN_OPEN   = new Image(); devs.IMG.CURTAIN_OPEN.src  = './img/Devices.Curtain.On.Open.png';
@@ -27,8 +33,15 @@ let devs = {
 		devs.IMG.TERMOMETER_MID = new Image(); devs.IMG.TERMOMETER_MID.src = './img/Sensors.RoomTempSensor.On.RoomTempDisp.Mid.png';
 		devs.IMG.TERMOMETER_HI  = new Image(); devs.IMG.TERMOMETER_HI.src  = './img/Sensors.RoomTempSensor.On.RoomTempDisp.Hi.png';
 
+
+		devs.IMG.AIRCON_BACK.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.AIRCON_ON.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.AIRCON_OFF.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_AUTO.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_COOL.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_HEAT.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_DRY.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
+		devs.IMG.AIRCON_WIND.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.LIGHT_ON.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.LIGHT_OFF.onload = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
 		devs.IMG.CURTAIN_OPEN.onload  = () => { devs.img_loadedNum += 1; devs.img_loadedNum < devs.IMG_LOADED_MAX ? 0:cb(); };
@@ -45,19 +58,48 @@ let devs = {
 
 	// エアコン描画
 	drawAircon: function (ctx, state) {
+		ctx.drawImage( devs.IMG.AIRCON_BACK, 567, 0 );
+
 		switch( state['80'] ) {
-			case '31':
+			case '31':  // off
 			ctx.drawImage( devs.IMG.AIRCON_OFF, 575, 2 );
 			break;
 
-			case '30':
+			case '30':  // on
 			ctx.drawImage( devs.IMG.AIRCON_ON, 575, 2 );
+
+			switch( state['b0'] ) {
+				case '41': // auto
+				ctx.drawImage( devs.IMG.AIRCON_AUTO, 551, 63 );
+				break;
+
+				case '42': // cool
+				ctx.drawImage( devs.IMG.AIRCON_COOL, 551, 63 );
+				break;
+
+				case '43':  // heat
+				ctx.drawImage( devs.IMG.AIRCON_HEAT, 556, 63 );
+				break;
+
+				case '44': // dry
+				ctx.drawImage( devs.IMG.AIRCON_DRY, 571, 66 );
+				break;
+
+				case '45': // wind
+				ctx.drawImage( devs.IMG.AIRCON_WIND, 571, 66 );
+				break;
+
+				default:
+				console.error('devs.draw() unknown state:', state);
+				break;
+			}
 			break;
 
 			default:
 			console.error('devs.draw() unknown state:', state);
 			break;
 		}
+
 
 		let temp = parseInt( state['b3'], 16 );
 		ctx.fillText( temp + " ℃", 655, 25);

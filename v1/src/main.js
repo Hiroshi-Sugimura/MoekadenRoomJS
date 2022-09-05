@@ -128,15 +128,19 @@ ipcMain.handle( 'already', async (event, arg) => {
 ipcMain.handle( 'Lockkey', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Lockkey'):0;
 
-	devState['026f01']['e0'] = '41'; // Locked
+
 	mainEL.api.sendOPC1('224.0.23.0', '026f01', '05ff01', '73', 'e0', '41');
+
+	devState['026f01']['e0'] = '41'; // Locked
+	sendDevState();
 });
 
 ipcMain.handle( 'Unlockkey', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Unlockkey'):0;
 
-	devState['026f01']['e0'] = '42';  // Unlocked
 	mainEL.api.sendOPC1('224.0.23.0', '026f01', '05ff01', '73', 'e0', '42');
+	devState['026f01']['e0'] = '42';  // Unlocked
+	sendDevState();
 });
 
 
@@ -145,6 +149,7 @@ ipcMain.handle( 'Closecurtain', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Closecurtain'):0;
 
 	devState['026001']['e0'] = '42';  // Close
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '026001', '05ff01', '73', 'e0', '42');
 });
 
@@ -152,6 +157,7 @@ ipcMain.handle( 'Opencurtain', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Opencurtain'):0;
 
 	devState['026001']['e0'] = '41';  // Open
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '026001', '05ff01', '73', 'e0', '41');
 });
 
@@ -160,6 +166,7 @@ ipcMain.handle( 'Onlight', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onlight'):0;
 
 	devState['029001']['80'] = '30';  // On
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '029001', '05ff01', '73', '80', '30');
 });
 
@@ -167,6 +174,7 @@ ipcMain.handle( 'Offlight', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offlight'):0;
 
 	devState['029001']['80'] = '31';  // Off
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '029001', '05ff01', '73', '80', '31');
 });
 
@@ -214,6 +222,7 @@ ipcMain.handle( 'Onaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onaircon'):0;
 
 	devState['013001']['80'] = '30';  // On
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', '80', '30');
 });
 
@@ -221,6 +230,7 @@ ipcMain.handle( 'Offaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offaircon'):0;
 
 	devState['013001']['80'] = '31';  // Off
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', '80', '31');
 });
 
@@ -255,6 +265,7 @@ ipcMain.handle( 'Autoaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Autoaircon'):0;
 
 	devState['013001']['b0'] = '41';  // auto
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', 'b0', '41');
 });
 
@@ -262,6 +273,7 @@ ipcMain.handle( 'Coolaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Coolaircon'):0;
 
 	devState['013001']['b0'] = '42';  // cool
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', 'b0', '42');
 });
 
@@ -269,6 +281,7 @@ ipcMain.handle( 'Heataircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Heataircon'):0;
 
 	devState['013001']['b0'] = '43';  // heat
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', 'b0', '43');
 });
 
@@ -276,6 +289,7 @@ ipcMain.handle( 'Dryaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Dryaircon'):0;
 
 	devState['013001']['b0'] = '44';  // dry
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', 'b0', '44');
 });
 
@@ -283,6 +297,7 @@ ipcMain.handle( 'Windaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Windaircon'):0;
 
 	devState['013001']['b0'] = '45';  // wind
+	sendDevState();
 	mainEL.api.sendOPC1('224.0.23.0', '013001', '05ff01', '73', 'b0', '45');
 });
 
