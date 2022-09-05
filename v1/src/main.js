@@ -37,8 +37,7 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	width: 860,  // product, innerWidth:854 + 16
-	// width: 1255,  // debug
+ 	width: 860,  // product, innerWidth:854 + 16
 	height: 529,   // innerHight:480 + 59
 	debug: true
 };
@@ -116,6 +115,101 @@ ipcMain.handle( 'already', async (event, arg) => {
 	} );
 
 	ELStart();
+});
+
+
+// GUIのボタン処理
+// 鍵
+ipcMain.handle( 'Lockkey', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Lockkey'):0;
+
+});
+
+ipcMain.handle( 'Unlockkey', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Unlockkey'):0;
+
+});
+
+
+// カーテン
+ipcMain.handle( 'Closecurtain', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Closecurtain'):0;
+
+});
+
+ipcMain.handle( 'Opencurtain', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Opencurtain'):0;
+
+});
+
+// ライト
+ipcMain.handle( 'Onlight', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onlight'):0;
+
+});
+
+ipcMain.handle( 'Offlight', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offlight'):0;
+
+});
+
+// 温度計
+ipcMain.handle( 'Uptemperature', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uptemperature'):0;
+
+});
+
+ipcMain.handle( 'Downtemperature', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downtemperature'):0;
+
+});
+
+
+// エアコン上段
+ipcMain.handle( 'Onaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onaircon'):0;
+
+});
+
+ipcMain.handle( 'Offaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offaircon'):0;
+
+});
+
+ipcMain.handle( 'Upaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uparicon'):0;
+
+});
+
+ipcMain.handle( 'Downaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downaircon'):0;
+
+});
+
+// エアコン下段
+ipcMain.handle( 'Autoaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Autoaircon'):0;
+
+});
+
+ipcMain.handle( 'Coolaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Coolaircon'):0;
+
+});
+
+ipcMain.handle( 'Heataircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Heataircon'):0;
+
+});
+
+ipcMain.handle( 'Dryaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Dryaircon'):0;
+
+});
+
+ipcMain.handle( 'Windaircon', async (event, arg) => {
+	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Windaircon'):0;
+
 });
 
 

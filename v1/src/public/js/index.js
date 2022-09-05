@@ -119,6 +119,7 @@ function onLoad() {
 			btnLockkey.classList.add('selected')
 		}
 
+		window.ipc.Lockkey();
 	}
 
 	function btnUnlockkey_Click() {
@@ -129,6 +130,8 @@ function onLoad() {
 		if( !btnUnlockkey.classList.contains('selected') ) {
 			btnUnlockkey.classList.add('selected')
 		}
+
+		window.ipc.Unlockkey();
 	}
 
 
@@ -148,6 +151,7 @@ function onLoad() {
 			btnClosecurtain.classList.add('selected')
 		}
 
+		window.ipc.Closecurtain();
 	}
 
 	function btnOpencurtain_Click() {
@@ -158,6 +162,8 @@ function onLoad() {
 		if( !btnOpencurtain.classList.contains('selected') ) {
 			btnOpencurtain.classList.add('selected')
 		}
+
+		window.ipc.Opencurtain();
 	}
 
 	// ライト
@@ -176,6 +182,7 @@ function onLoad() {
 			btnOfflight.classList.add('selected')
 		}
 
+		window.ipc.Offlight();
 	}
 
 	function btnOnlight_Click() {
@@ -186,7 +193,28 @@ function onLoad() {
 		if( !btnOnlight.classList.contains('selected') ) {
 			btnOnlight.classList.add('selected')
 		}
+
+		window.ipc.Onlight();
 	}
+
+
+	// 温度計
+	const btnUptemperature = document.getElementById('btnUptemperature');
+	btnUptemperature.addEventListener('click', btnUptemperature_Click);
+	const btnDowntemperature = document.getElementById('btnDowntemperature');
+	btnDowntemperature.addEventListener('click', btnDowntemperature_Click);
+
+	function btnUptemperature_Click() {
+		console.log( 'btnOfflight_Click' );
+		window.ipc.Uptemperature();
+	}
+
+	function btnDowntemperature_Click() {
+		console.log( 'btnDowntemperature_Click' );
+
+		window.ipc.Downtemperature();
+	}
+
 
 
 	// エアコン上段
@@ -205,6 +233,7 @@ function onLoad() {
 			btnOffaircon.classList.add('selected')
 		}
 
+		window.ipc.Offaircon();
 	}
 
 	function btnOnaircon_Click() {
@@ -215,7 +244,27 @@ function onLoad() {
 		if( !btnOnaircon.classList.contains('selected') ) {
 			btnOnaircon.classList.add('selected')
 		}
+
+		window.ipc.Onaircon();
 	}
+
+	const btnUpaircon = document.getElementById('btnUpaircon');
+	btnUpaircon.addEventListener('click', btnUpaircon_Click);
+	const btnDownaircon = document.getElementById('btnDownaircon');
+	btnDownaircon.addEventListener('click', btnDownaircon_Click);
+
+	function btnUpaircon_Click() {
+		console.log( 'btnUpaircon_Click' );
+		window.ipc.Upaircon();
+	}
+
+	function btnDownaircon_Click() {
+		console.log( 'btnDownaircon_Click' );
+
+		window.ipc.Downaircon();
+	}
+
+
 
 	// エアコン下段
 	const btnAutoaircon = document.getElementById('btnAutoaircon');
@@ -246,6 +295,9 @@ function onLoad() {
 		if( btnWindaircon.classList.contains('selected') ) {
 			btnWindaircon.classList.remove('selected')
 		}
+
+		window.ipc.Autoaircon();
+
 	}
 
 	function btnCoolaircon_Click() {
@@ -265,6 +317,8 @@ function onLoad() {
 		if( btnWindaircon.classList.contains('selected') ) {
 			btnWindaircon.classList.remove('selected')
 		}
+
+		window.ipc.Coolaircon();
 	}
 
 	function btnHeataircon_Click() {
@@ -284,6 +338,8 @@ function onLoad() {
 		if( btnWindaircon.classList.contains('selected') ) {
 			btnWindaircon.classList.remove('selected')
 		}
+
+		window.ipc.Heataircon();
 	}
 
 	function btnDryaircon_Click() {
@@ -303,6 +359,8 @@ function onLoad() {
 		if( btnWindaircon.classList.contains('selected') ) {
 			btnWindaircon.classList.remove('selected')
 		}
+
+		window.ipc.Dryaircon();
 	}
 
 
@@ -323,9 +381,9 @@ function onLoad() {
 		if( !btnWindaircon.classList.contains('selected') ) {
 			btnWindaircon.classList.add('selected')
 		}
+
+		window.ipc.Windaircon();
 	}
-
-
 
 
 
