@@ -398,7 +398,6 @@ function onLoad() {
 			// EL関連
 			case "draw":
 			console.log( 'main -> draw:', c.arg );
-			// window.renewFacilitiesEL( c.arg );
 			draw( c.arg );
 			break;
 

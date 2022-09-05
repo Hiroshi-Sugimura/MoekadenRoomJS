@@ -58,6 +58,9 @@ let devs = {
 			console.error('devs.draw() unknown state:', state);
 			break;
 		}
+
+		let temp = parseInt( state['b3'], 16 );
+		ctx.fillText( temp + " ℃", 655, 25);
 	},
 
 	// ライト描画
@@ -100,8 +103,13 @@ let devs = {
 
 	// 温度計描画
 	drawThermometer: function (ctx, state) {
+		console.log( 'drawThermometer', state );
+		let temp = parseInt( state['e0'][0] + state['e0'][1], 16 );
+		temp *= 0.1;
+
+		ctx.fillText( temp + " ℃", 160, 40);
+
 		// let temp = state['e0'];
-		let temp = 25; // debug
 		if( temp < 20 ) {  // low
 			ctx.drawImage( devs.IMG.TERMOMETER_LOW, 167, 49 );
 		}else if( temp < 26 ) { // mid
@@ -123,12 +131,12 @@ let devs = {
 
 		console.log('devs.draw() state:', state);
 
-		devs.drawAircon( ctx, state.aircon );
-		devs.drawLight( ctx, state.light );
-		devs.drawCurtain( ctx, state.curtain );
-		devs.drawLock( ctx, state.lock );
-		devs.drawThermometer( ctx, state.thermometer );
-		devs.drawSmartmeter( ctx, state.smartmeter );
+		state.aircon? devs.drawAircon( ctx, state.aircon ):0;
+		state.light? devs.drawLight( ctx, state.light ):0;
+		state.curtain? devs.drawCurtain( ctx, state.curtain ):0;
+		state.lock? devs.drawLock( ctx, state.lock ):0;
+		state.thermometer? devs.drawThermometer( ctx, state.thermometer ):0;
+		state.smartmeter? devs.drawSmartmeter( ctx, state.smartmeter ):0;
 	}
 
 };

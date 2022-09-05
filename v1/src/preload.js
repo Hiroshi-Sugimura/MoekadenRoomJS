@@ -58,7 +58,7 @@ contextBridge.exposeInMainWorld('ipc', {
 	},
 
 	Onlight:() => {
-		console.log( 'Onilght' );
+		console.log( 'Onlight' );
 		ipcRenderer.invoke('Onlight');
 	},
 
