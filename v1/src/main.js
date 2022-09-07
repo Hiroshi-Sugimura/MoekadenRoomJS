@@ -316,6 +316,7 @@ let ELStart = function() {
 ipcMain.handle( 'already', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already, devState:', devState):0;
 
+
 	// 一旦初期値を送る
 	sendDevState();
 
@@ -521,8 +522,8 @@ async function createWindow() {
 	menuInitialize();
 	mainWindow.loadURL( path.join(__dirname, 'public', 'index.htm') );
 
-	if (isDevelopment) { // 開発モードならDebugGUIひらく
-		mainWindow.webContents.openDevTools()
+	if (config.debug) { // debugモードならDebugGUIひらく
+		mainWindow.webContents.openDevTools();
 	}
 
 

@@ -5,6 +5,7 @@
 		"mac": "export NODE_ENV=development && electron ./src",
 		"build-win": "electron-builder --project ./src --win --x64",
 		"build-mac": "electron-builder --project ./src --mac --x64",
+		"build-mac": "electron-builder --project ./src --mac --universal",
 		"rebuild": "electron-rebuild -f -w sqlite3",
 		"postinstall": "electron-builder install-app-deps"
 	},
