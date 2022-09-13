@@ -37,9 +37,10 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	width: 860,  // product, innerWidth:854 + 16
-	height: 529,   // innerHight:480 + 59
-	debug: true
+	width: isWin?860: isMac?854 :860,  // win = innerWidth:854 + 16
+	height: isWin?529: isMac?480 :529,   // innerHight:480 + 59
+	// debug: true
+	debug: false
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -520,7 +521,8 @@ async function createWindow() {
 		}
 	});
 	menuInitialize();
-	mainWindow.loadURL( path.join(__dirname, 'public', 'index.htm') );
+	// mainWindow.loadURL( path.join(__dirname, 'public', 'index.htm') );  // MacだとloadURLが動かない
+	mainWindow.loadFile( path.join(__dirname, 'public', 'index.htm') );
 
 	if (config.debug) { // debugモードならDebugGUIひらく
 		mainWindow.webContents.openDevTools();
