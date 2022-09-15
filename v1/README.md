@@ -1,6 +1,7 @@
 # MoekadenRoomJS
-Electron
+Electron版
 
+- buildはsrc以下で npm run make
 
 ## Module licenses
 
@@ -266,4 +267,10 @@ using LicenseChecker.js
 - "yargs-parser@21.1.1","ISC","https://github.com/yargs/yargs-parser"
 - "yargs@17.5.1","MIT","https://github.com/yargs/yargs"
 - "yauzl@2.10.0","MIT","https://github.com/thejoshwolfe/yauzl"
+
+
+## 変更履歴
+
+- 1.1.0 release P, rev.1 に対応するためにEPC増やしていく
+- 1.0.0 公開
 
