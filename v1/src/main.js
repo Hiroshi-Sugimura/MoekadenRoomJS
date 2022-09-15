@@ -265,22 +265,23 @@ let setAirconSub = function(rinfo, els, epc, edt) {
 	}
 };
 
+// OPC複数の場合に対応
 let setAircon = async function(rinfo, els) {
 	let success = true;
 	let retDetails = [];
 	let ret_opc = 0;
-	console.log( 'Recv DETAILs:', els.DETAILs );
+	// console.log( 'Recv DETAILs:', els.DETAILs );
 	for (let epc in els.DETAILs) {
-		console.log( 'Now:', epc, devState['013001'][epc] );
+		// console.log( 'Now:', epc, devState['013001'][epc] );
 
 		if( await setAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
-			console.log( 'New:', epc, devState['013001'][epc] );
+			// console.log( 'New:', epc, devState['013001'][epc] );
 			retDetails.push( parseInt(epc,16) );  // epcは文字列なので
 			retDetails.push( devState['013001'][epc].length );
 			retDetails.push( devState['013001'][epc] );
-			console.log( 'retDetails:', retDetails );
+			// console.log( 'retDetails:', retDetails );
 		}else{
-			console.log( 'failed:', epc, devState['013001'][epc] );
+			// console.log( 'failed:', epc, devState['013001'][epc] );
 			retDetails[epc] = [0x00];
 			success = false;
 		}
@@ -290,7 +291,7 @@ let setAircon = async function(rinfo, els) {
 	let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
 
 	let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
-	console.dir( arr.flat() ) ;
+	// console.dir( arr.flat() ) ;
 	EL.sendArray( rinfo.address, arr.flat() );
 };
 
