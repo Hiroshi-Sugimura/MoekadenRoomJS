@@ -172,27 +172,27 @@ let mainEL = {
 				case '61':  // SET_C
 				switch( els.DEOJ.substr(0,4) ) {
 					case '0130':  // エアコン
-					setAircon( rinfo, els );
+					mainEL.setAircon( rinfo, els );
 					break;
 
 					case '0290':  // ライト
-					setLight( rinfo, els );
+					mainEL.setLight( rinfo, els );
 					break;
 
 					case '0260':  // カーテン
-					setCurtain( rinfo, els );
+					mainEL.setCurtain( rinfo, els );
 					break;
 
 					case '026f':  // 鍵
-					setLock( rinfo, els );
+					mainEL.setLock( rinfo, els );
 					break;
 
 					case '0011':  // 温度計
-					setThermometer( rinfo, els );
+					mainEL.setThermometer( rinfo, els );
 					break;
 
 					case '0288':  // スマメ
-					setSmartmeter( rinfo, els );
+					mainEL.setSmartmeter( rinfo, els );
 					break;
 				}
 				break;
@@ -200,27 +200,27 @@ let mainEL = {
 				case '62':  // GET
 				switch( els.DEOJ.substr(0,4) ) {
 					case '0130':  // エアコン
-					getAircon( rinfo, els );
+					mainEL.getAircon( rinfo, els );
 					break;
 
 					case '0290':  // ライト
-					getLight( rinfo, els );
+					mainEL.getLight( rinfo, els );
 					break;
 
 					case '0260':  // カーテン
-					getCurtain( rinfo, els );
+					mainEL.getCurtain( rinfo, els );
 					break;
 
 					case '026f':  // 鍵
-					getLock( rinfo, els );
+					mainEL.getLock( rinfo, els );
 					break;
 
 					case '0011':  // 温度計
-					getThermometer( rinfo, els );
+					mainEL.getThermometer( rinfo, els );
 					break;
 
 					case '0288':  // スマメ
-					getSmartmeter( rinfo, els );
+					mainEL.getSmartmeter( rinfo, els );
 					break;
 				}
 				break;
@@ -272,15 +272,43 @@ let mainEL = {
 	//////////////////////////////////////////////////////////////////////
 	// ECHONET Lite管理
 
+	//----------------------------------------------------------------
 	// エアコン
-	getAircon: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['013001'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['013001'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getAirconSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['013001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
+	},
+
+	// OPC複数の場合に対応
+	getAircon: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
+
+			if( await mainEL.getAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['013001'][epc].length );
+				retDetails.push( mainEL.devState['013001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.log( 'send:', arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
 	setAirconSub: function(rinfo, els, epc, edt) {
@@ -378,7 +406,7 @@ let mainEL = {
 		for (let epc in els.DETAILs) {
 			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
 
-			if( await setAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+			if( await mainEL.setAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
 				// console.log( 'New:', epc, mainEL.devState['013001'][epc] );
 				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
 				retDetails.push( mainEL.devState['013001'][epc].length );
@@ -395,19 +423,48 @@ let mainEL = {
 		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
 
 		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
-		// console.dir( arr.flat() ) ;
-		EL.sendArray( rinfo.address, arr.flat() );
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
+	//----------------------------------------------------------------
 	// ライト
-	getLight: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['029001'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['029001'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getLightSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['029001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
+	},
+
+	// OPC複数の場合に対応
+	getLight: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['029001'][epc] );
+
+			if( await mainEL.getLightSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['029001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['029001'][epc].length );
+				retDetails.push( mainEL.devState['029001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['029001'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
 	setLight: function(rinfo, els) {
@@ -425,22 +482,52 @@ let mainEL = {
 		}
 	},
 
+	//----------------------------------------------------------------
 	// 鍵
-	getLock: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['026f01'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['026f01'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getLockSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['026f01'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
 	},
+
+	// OPC複数の場合に対応
+	getLock: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026f01'][epc] );
+
+			if( await mainEL.getLockSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026f01'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026f01'][epc].length );
+				retDetails.push( mainEL.devState['026f01'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026f01'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
 
 	setLockon: function(rinfo, els) {
 		for (let epc in els.DETAILs) {
 			if (mainEL.devState['026f01'][epc]) { // 持ってるEPCのとき
 				mainEL.devState['026f01'][epc] = els.DETAILs[epc];
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['026f01'][epc]);
+				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['026f01'][epc]);
 			} else { // 持っていないEPCのとき, SNA
 				if( els.ESV == EL.SETC ) {
 					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SETC_SNA, EL.toHexArray(epc), [0x00]);
@@ -451,22 +538,52 @@ let mainEL = {
 		}
 	},
 
+	//----------------------------------------------------------------
 	// カーテン
-	getCurtain: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['026001'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['026001'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getCurtainSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['026001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
 	},
+
+	// OPC複数の場合に対応
+	getCurtain: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026001'][epc] );
+
+			if( await mainEL.getCurtainSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026001'][epc].length );
+				retDetails.push( mainEL.devState['026001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026001'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
 
 	setCurtain: function(rinfo, els) {
 		for (let epc in els.DETAILs) {
 			if (mainEL.devState['026001'][epc]) { // 持ってるEPCのとき
 				mainEL.devState['026001'][epc] = els.DETAILs[epc];
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['026001'][epc]);
+				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['026001'][epc]);
 			} else { // 持っていないEPCのとき, SNA
 				if( els.ESV == EL.SETC ) {
 					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SETC_SNA, EL.toHexArray(epc), [0x00]);
@@ -477,15 +594,44 @@ let mainEL = {
 		}
 	},
 
+	//----------------------------------------------------------------
 	// スマメ
-	getSmartmeter: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getSmartmeterSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
+	},
+
+	// OPC複数の場合に対応
+	getSmartmeter: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['028801'][epc] );
+
+			if( await mainEL.getSmartmeterSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['028801'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['028801'][epc].length );
+				retDetails.push( mainEL.devState['028801'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['028801'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
 	setSmartmeter: function(rinfo, els) {
@@ -503,24 +649,54 @@ let mainEL = {
 		}
 	},
 
+
+	//----------------------------------------------------------------
 	// 温度計
-	getThermometer: function(rinfo, els) {
-		for (let epc in els.DETAILs) {
-			if (mainEL.devState['001101'][epc]) { // 持ってるEPCのとき
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['001101'][epc]);
-			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
-			}
+	getThermometerSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['001101'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
 		}
+	},
+
+	// OPC複数の場合に対応
+	getThermometer: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
+
+			if( await mainEL.getThermometerSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['001101'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['001101'][epc].length );
+				retDetails.push( mainEL.devState['001101'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
 	setThermometer: function(rinfo, els) {
 		for (let epc in els.DETAILs) {
 			if (mainEL.devState['001101'][epc]) { // 持ってるEPCのとき
 				mainEL.devState['001101'][epc] = els.DETAILs[epc];
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['001101'][epc]);
+				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['001101'][epc]);
 			} else { // 持っていないEPCのとき, SNA
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_SNA, EL.toHexArray(epc), [0x00]);
+				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_SNA, EL.toHexArray(epc), [0x00]);
 			}
 		}
 	}
