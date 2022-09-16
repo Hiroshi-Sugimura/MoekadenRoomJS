@@ -92,8 +92,8 @@ let devs = {
 	drawAircon: function (ctx, state) {
 		ctx.drawImage( devs.IMG.AIRCON_BACK, 567, 0 );
 
-		switch( state['80'] ) {
-			case '31':  // off
+		switch( state['80'][0] ) {
+			case 0x31:  // off
 			ctx.drawImage( devs.IMG.AIRCON_OFF, 575, 2 );
 			if( btnOnaircon.classList.contains('selected') ) {
 				btnOnaircon.classList.remove('selected');
@@ -103,7 +103,7 @@ let devs = {
 			}
 			break;
 
-			case '30':  // on
+			case 0x30:  // on
 			ctx.drawImage( devs.IMG.AIRCON_ON, 575, 2 );
 			if( !btnOnaircon.classList.contains('selected') ) {
 				btnOnaircon.classList.add('selected');
@@ -112,8 +112,8 @@ let devs = {
 				btnOffaircon.classList.remove('selected');
 			}
 
-			switch( state['b0'] ) {
-				case '41': // auto
+			switch( state['b0'][0] ) {
+				case 0x41: // auto
 				ctx.drawImage( devs.IMG.AIRCON_AUTO, 551, 63 );
 				if( !btnAutoaircon.classList.contains('selected') ) {
 					btnAutoaircon.classList.add('selected')
@@ -132,7 +132,7 @@ let devs = {
 				}
 				break;
 
-				case '42': // cool
+				case 0x42: // cool
 				ctx.drawImage( devs.IMG.AIRCON_COOL, 551, 63 );
 				if( btnAutoaircon.classList.contains('selected') ) {
 					btnAutoaircon.classList.remove('selected')
@@ -151,7 +151,7 @@ let devs = {
 				}
 				break;
 
-				case '43':  // heat
+				case 0x43:  // heat
 				ctx.drawImage( devs.IMG.AIRCON_HEAT, 556, 63 );
 				console.log( 'btnHeataircon_Click' );
 				if( btnAutoaircon.classList.contains('selected') ) {
@@ -171,7 +171,7 @@ let devs = {
 				}
 				break;
 
-				case '44': // dry
+				case 0x44: // dry
 				ctx.drawImage( devs.IMG.AIRCON_DRY, 571, 66 );
 				console.log( 'btnDryaircon_Click' );
 				if( btnAutoaircon.classList.contains('selected') ) {
@@ -191,7 +191,7 @@ let devs = {
 				}
 				break;
 
-				case '45': // wind
+				case 0x45: // wind
 				ctx.drawImage( devs.IMG.AIRCON_WIND, 571, 66 );
 				console.log( 'btnWindaircon_Click' );
 				if( btnAutoaircon.classList.contains('selected') ) {
@@ -212,7 +212,7 @@ let devs = {
 				break;
 
 				default:
-				console.error('devs.draw() unknown state:', state);
+				console.error('devs.draw() aircon unknown state:', state);
 				break;
 			}
 			break;
@@ -229,8 +229,8 @@ let devs = {
 
 	// ライト描画
 	drawLight: function (ctx, state) {
-		switch( state['80'] ) {
-			case '30':  // ON
+		switch( state['80'][0] ) {
+			case 0x30:  // ON
 			ctx.drawImage( devs.IMG.LIGHT_ON, 47, 84 );
 			if( !btnOnlight.classList.contains('selected') ) {
 				btnOnlight.classList.add('selected');
@@ -240,7 +240,7 @@ let devs = {
 			}
 			break;
 
-			case '31': // OFF
+			case 0x31: // OFF
 			ctx.drawImage( devs.IMG.LIGHT_OFF, 47, 84 );
 			if( btnOnlight.classList.contains('selected') ) {
 				btnOnlight.classList.remove('selected');
@@ -251,15 +251,15 @@ let devs = {
 			break;
 
 			default:
-			console.error('devs.draw() unknown state:', state);
+			console.error('devs.draw() lighting unknown state:', state);
 			break;
 		}
 	},
 
 	// カーテン描画
 	drawCurtain: function (ctx, state) {
-		switch( state['e0'] ) {
-			case '41': // open
+		switch( state['e0'][0] ) {
+			case 0x41: // open
 			ctx.drawImage( devs.IMG.CURTAIN_OPEN, 244, 30 );
 			if( !btnOpencurtain.classList.contains('selected') ) {
 				btnOpencurtain.classList.add('selected');
@@ -269,7 +269,7 @@ let devs = {
 			}
 			break;
 
-			case '42':  // close
+			case 0x42:  // close
 			ctx.drawImage( devs.IMG.CURTAIN_CLOSE, 256, 37 );
 			if( btnOpencurtain.classList.contains('selected') ) {
 				btnOpencurtain.classList.remove('selected');
@@ -280,15 +280,15 @@ let devs = {
 			break;
 
 			default:
-			console.error('devs.draw() unknown state:', state);
+			console.error('devs.draw() curtain unknown state:', state);
 			break;
 		}
 	},
 
 	// 鍵描画
 	drawLock: function (ctx, state) {
-		switch( state['e0'] ) {
-			case '41':  // Locked
+		switch( state['e0'][0] ) {
+			case 0x41:  // Locked
 			if( !btnLockkey.classList.contains('selected') ) {
 				btnLockkey.classList.add('selected');
 			}
@@ -297,7 +297,7 @@ let devs = {
 			}
 			break;
 
-			case '42': // Unlocked
+			case 0x42: // Unlocked
 			if( btnLockkey.classList.contains('selected') ) {
 				btnLockkey.classList.remove('selected');
 			}
@@ -307,7 +307,7 @@ let devs = {
 			break;
 
 			default:
-			console.error('devs.draw() unknown state:', state);
+			console.error('devs.draw() key unknown state:', state);
 			break;
 		}
 	},
@@ -315,7 +315,7 @@ let devs = {
 	// 温度計描画
 	drawThermometer: function (ctx, state) {
 		console.log( 'drawThermometer', state );
-		let temp = parseInt( state['e0'][0] + state['e0'][1], 16 );
+		let temp = state['e0'][0] * 256 + state['e0'][1];
 		temp *= 0.1;
 
 		ctx.fillText( temp + " ℃", 160, 40);
