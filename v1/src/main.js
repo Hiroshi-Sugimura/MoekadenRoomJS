@@ -81,7 +81,7 @@ let devState = {
 		'9e': [0x02, 0x80, 0x81],  // set map, 1 Byte目は個数, get
 		'9f': [0x0a, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
 		// uniq
-		'e0': ['00', 'dc']  // 温度計測値, get
+		'e0': [0x00, 0xdc]  // 温度計測値, get
 	},
 	'013001': {  // aircon
 		// super
@@ -97,7 +97,7 @@ let devState = {
 		// uniq
 		'8f': [0x42], // 節電動作設定, set, get, inf
 		'b0': [0x42], // 運転モード設定, set, get, inf
-		'b3': [0x14], // 温度設定, set, get
+		'b3': [0x1a], // 温度設定, set, get
 		'bb': [0x14], // 室内温度計測値, get
 		'a0': [0x41]  // 風量設定, set, get, inf
 	},
@@ -587,16 +587,16 @@ ipcMain.handle( 'Uptemperature', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uptemperature'):0;
 
 	let temp = devState['001101']['e0'][0] * 256 + devState['001101']['e0'][1];
-	// console.log( 'devState:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp );
+	// console.log( 'now temp:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp*0.1 );
 
 	temp += 10;
 	if( temp > 32760 ) { temp = 32760; }
 
-	let temp_h = Byte2HexString( Math.floor(temp / 256) );
-	let temp_l = Byte2HexString( temp % 256 );
+	let temp_h =  Math.floor(temp / 256);
+	let temp_l = temp % 256;
 
-	devState['001101']['e0'][0] = [temp_h];
-	devState['001101']['e0'][1] = [temp_l];
+	devState['001101']['e0'] = [temp_h,temp_l];
+	// console.log( 'new temp:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp*0.1 );
 
 	sendDevState();
 });
@@ -605,17 +605,16 @@ ipcMain.handle( 'Downtemperature', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downtemperature'):0;
 
 	let temp = devState['001101']['e0'][0] * 256 + devState['001101']['e0'][1];
-	// console.log( 'devState:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp );
+	// console.log( 'now temp:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp*0.1 );
 
 	temp -= 10;
 	if( temp < -2730 ) { temp = 2730; }
 
-	let temp_h = Byte2HexString( Math.floor(temp / 256) );
-	let temp_l = Byte2HexString( temp % 256 );
+	let temp_h = Math.floor(temp / 256);
+	let temp_l = temp % 256;
 
-	devState['001101']['e0'][0] = [temp_h];
-	devState['001101']['e0'][1] = [temp_l];
-	console.log( 'devState:', devState['001101']['e0'][0], devState['001101']['e0'][1] );
+	devState['001101']['e0'] = [temp_h,temp_l];
+	// console.log( 'new temp:', devState['001101']['e0'][0], devState['001101']['e0'][1], 'temp:', temp*0.1 );
 
 	sendDevState();
 });
@@ -641,9 +640,11 @@ ipcMain.handle( 'Offaircon', async (event, arg) => {
 ipcMain.handle( 'Upaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uparicon'):0;
 
-	let temp = devState['013001']['b3'];
+	let temp = devState['013001']['b3'][0];
+	console.log( temp );
 
 	temp += 1;
+	console.log( temp );
 	if( temp > 50 ) { temp = 50; }
 
 	devState['013001']['b3'] = [temp];
@@ -654,7 +655,7 @@ ipcMain.handle( 'Upaircon', async (event, arg) => {
 ipcMain.handle( 'Downaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downaircon'):0;
 
-	let temp = devState['013001']['b3'];
+	let temp = devState['013001']['b3'][0];
 
 	temp -= 1;
 	if( temp < 0 ) { temp = 0; }

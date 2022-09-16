@@ -223,7 +223,7 @@ let devs = {
 		}
 
 
-		let temp = parseInt( state['b3'], 16 );
+		let temp = state['b3'][0];  // 温度
 		ctx.fillText( temp + " ℃", 655, 25);
 	},
 
@@ -323,7 +323,7 @@ let devs = {
 		// let temp = state['e0'];
 		if( temp < 20 ) {  // low
 			ctx.drawImage( devs.IMG.TERMOMETER_LOW, 167, 49 );
-		}else if( temp < 26 ) { // mid
+		}else if( temp < 28 ) { // mid
 			ctx.drawImage( devs.IMG.TERMOMETER_MID, 167, 49 );
 		}else{  // high
 			ctx.drawImage( devs.IMG.TERMOMETER_HI, 167, 49 );
