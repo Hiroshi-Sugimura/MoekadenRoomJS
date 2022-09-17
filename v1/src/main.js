@@ -205,10 +205,10 @@ ipcMain.handle( 'Upaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uparicon'):0;
 
 	let temp = mainEL.devState['013001']['b3'][0];
-	console.log( temp );
+	// console.log( temp );
 
 	temp += 1;
-	console.log( temp );
+	// console.log( temp );
 	if( temp > 50 ) { temp = 50; }
 
 	mainEL.devState['013001']['b3'] = [temp];

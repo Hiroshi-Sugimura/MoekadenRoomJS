@@ -271,6 +271,7 @@ using LicenseChecker.js
 
 ## 変更履歴
 
+- 1.2.0 複数のSet、Getに対応
 - 1.1.0 release P, rev.1 に対応するためにEPC増やしていく
 - 1.0.0 公開
 
