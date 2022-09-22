@@ -60,7 +60,10 @@
   ],
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+		  "icon": "./icons/H_pink.ico",
+		  "overwrite": "true"
+	  },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
