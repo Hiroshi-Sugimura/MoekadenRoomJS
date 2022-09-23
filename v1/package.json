@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "date-utils": "^1.2.21",
-    "echonet-lite": "^2.9.1",
+    "echonet-lite": "^2.9.2",
     "electron-compile": "^6.4.4",
     "electron-log": "^4.4.8",
     "electron-squirrel-startup": "^1.0.0",
