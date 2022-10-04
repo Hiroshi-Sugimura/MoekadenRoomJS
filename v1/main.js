@@ -40,7 +40,12 @@ let config = {
 	width: isWin?860: isMac?854 :860,  // win = innerWidth:854 + 16
 	height: isWin?529: isMac?480 :529,   // innerHight:480 + 59
 	// debug: true
-	debug: false
+	debug: false,
+	EL: {
+		ignoreMe:true,
+		autoGetProperties: false,
+		debugMode: false
+	}
 };
 
 //////////////////////////////////////////////////////////////////////

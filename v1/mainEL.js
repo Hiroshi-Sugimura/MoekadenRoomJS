@@ -235,11 +235,7 @@ let mainEL = {
 		mainEL.elsocket = await EL.initialize( mainEL.objList,
 											   mainEL.ELreceived,
 											   0,  // IPversion 4 and 6
-											   {
-												   ignoreMe:true,
-												   autoGetProperties: false,
-												   debugMode: false
-											   });
+											   mainEL.config);
 
 		// 各機器の識別番号をmac addressを利用したNode_profileを参照して更新
 		mainEL.devState['013001']['83'][7]  = mainEL.devState['029001']['83'][7]  = mainEL.devState['026001']['83'][7]  = mainEL.devState['026f01']['83'][7]  = mainEL.devState['001101']['83'][7]  = mainEL.devState['028801']['83'][7]  = EL.Node_details["83"][7];
@@ -290,7 +286,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -406,7 +403,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -415,7 +413,6 @@ let mainEL = {
 		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
 
 		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
-		// console.dir( arr.flat(Infinity) ) ;
 		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
@@ -520,7 +517,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['029001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -560,7 +558,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['026f01'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -619,7 +618,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['026f01'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -660,7 +660,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['026001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -719,7 +720,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['026001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -760,7 +762,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['028801'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -816,7 +819,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
@@ -864,7 +868,8 @@ let mainEL = {
 				// console.log( 'retDetails:', retDetails );
 			}else{
 				// console.log( 'failed:', epc, mainEL.devState['001101'][epc] );
-				retDetails[epc] = [0x00];
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
 				success = false;
 			}
 			ret_opc += 1;
