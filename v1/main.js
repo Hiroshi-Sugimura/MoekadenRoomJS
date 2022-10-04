@@ -42,6 +42,8 @@ let config = {
 	// debug: true
 	debug: false,
 	EL: {
+		v4: '',
+		v6: '',
 		ignoreMe:true,
 		autoGetProperties: false,
 		debugMode: false
@@ -69,7 +71,7 @@ let ELStart = async function() {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
 	// mainEL初期設定
-	await mainEL.start( {network: config.network, EL: config.EL},
+	await mainEL.start( config.EL,
 						(rinfo, els, err) => {  // els received, 受信のたびに呼ばれる
 							config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ELStart():', els):0;
 							// 機器の状態変化があれば画面に反映

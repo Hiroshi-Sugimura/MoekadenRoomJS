@@ -232,10 +232,7 @@ let mainEL = {
 		mainEL.recv_callback = receive_cb;
 
 		// ECHONET Lite socket
-		mainEL.elsocket = await EL.initialize( mainEL.objList,
-											   mainEL.ELreceived,
-											   0,  // IPversion 4 and 6
-											   mainEL.config);
+		mainEL.elsocket = await EL.initialize( mainEL.objList, mainEL.ELreceived, 0, mainEL.config);
 
 		// 各機器の識別番号をmac addressを利用したNode_profileを参照して更新
 		mainEL.devState['013001']['83'][7]  = mainEL.devState['029001']['83'][7]  = mainEL.devState['026001']['83'][7]  = mainEL.devState['026f01']['83'][7]  = mainEL.devState['001101']['83'][7]  = mainEL.devState['028801']['83'][7]  = EL.Node_details["83"][7];
