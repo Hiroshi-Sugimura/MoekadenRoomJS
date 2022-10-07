@@ -14,8 +14,8 @@
   "homepage": "./",
   "keywords": [],
   "author": {
-	  "name": "Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)",
-	  "email": "hiroshi.sugimura@gmail.com"
+    "name": "Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)",
+    "email": "hiroshi.sugimura@gmail.com"
   },
   "license": "MIT",
   "config": {

@@ -9,6 +9,7 @@
 const fs   = require('fs');
 const path = require('path');
 const EL = require('echonet-lite');
+const cron = require('cron-node');
 
 // 基礎設定
 const appDir     = process.env.NODE_ENV === 'development' ? __dirname : __dirname;
@@ -20,6 +21,7 @@ let mainEL = {
 	elsocket: null,
 	recv_callback: null,
 	config: { },
+	measureTask: null,
 
 	devState: {
 		'001101': {  // thermometer
@@ -28,6 +30,7 @@ let mainEL = {
 			'81': [0x0f], // 設置場所, set, get, inf
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x02],  // 瞬時消費電力計測値, unsigned short
 			'88': [0x42], // 異常状態, 0x42 = 異常無, get
 			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
 			'8b': [0x00, 0x02], // 事業場コード
@@ -36,7 +39,7 @@ let mainEL = {
 			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
 			'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
 			'9e': [0x01, 0x81],  // set map, 1 Byte目は個数, get
-			'9f': [0x0e, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
 			// uniq
 			'e0': [0x00, 0xdc]  // 温度計測値, get
 		},
@@ -46,6 +49,7 @@ let mainEL = {
 			'81': [0x0f], // 設置場所, set, get, inf
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x02],  // 瞬時消費電力計測値, unsigned short
 			'88': [0x42], // 異常状態, 0x42 = 異常無, get
 			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, ,get
 			'8b': [0x00, 0x02], // 事業場コード
@@ -54,7 +58,7 @@ let mainEL = {
 			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
 			'9d': [0x05, 0x80, 0x81, 0x8f, 0xb0, 0xa0],  // inf map, 1 Byte目は個数, get
 			'9e': [0x06, 0x80, 0x81, 0x8f, 0xb0, 0xb3, 0xa0],  // set map, 1 Byte目は個数, get
-			'9f': [0x12, 13,  1,  1,  9,  0,  0,  0,  0,  1,  0,  1,  9,  1,  3,  3,  3], // get map, 1 Byte目は個数, 記述形式2, get
+			'9f': [0x13, 13,  1,  1,  9,  1,  0,  0,  0,  1,  0,  1,  9,  1,  3,  3,  3], // get map, 1 Byte目は個数, 記述形式2, get
 			// uniq
 			'8f': [0x42], // 節電動作設定, set, get, inf
 			'a0': [0x41],  // 風量設定, set, get, inf
@@ -68,6 +72,7 @@ let mainEL = {
 			'81': [0x0f], // 設置場所, set, get, inf
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x03],  // 瞬時消費電力計測値, unsigned short
 			'88': [0x42], // 異常状態, 0x42 = 異常無, get
 			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
 			'8b': [0x00, 0x02], // 事業場コード
@@ -76,7 +81,7 @@ let mainEL = {
 			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
 			'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
 			'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
-			'9f': [0x0e, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
 			// uniq
 			'e0': [0x41]  // 開閉動作設定, set, get, inf
 		},
@@ -86,6 +91,7 @@ let mainEL = {
 			'81': [0x0f], // 設置場所, set, get, inf
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x01],  // 瞬時消費電力計測値, unsigned short
 			'88': [0x42], // 異常状態, 0x42 = 異常無, get
 			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
 			'8b': [0x00, 0x02], // 事業場コード
@@ -94,7 +100,7 @@ let mainEL = {
 			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
 			'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
 			'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
-			'9f': [0x0e, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
 			// uniq
 			'e0': [0x41]  // 施錠設定１, set, get, inf
 		},
@@ -118,7 +124,7 @@ let mainEL = {
 			'd3': [0x00, 0x00, 0x00, 0x01],  // 係数, Get
 			'd7': [0x08],  // 積算電力量有効桁数, get
 			'e0': [0x02],  // 積算電力量計測値（正）, get
-			'e1': [0x02],  // 積算電力量単位（正）, 0x02 = 0x01kWh, get
+			'e1': [0x02],  // 積算電力量単位（正）, 0x02 = 0.01kWh, get
 			'e2': [], // 積算電力量計測値履歴１（正）, get
 			'e5': [0x00], // 積算履歴収集日１, set, get
 			'e7': [0x10], // 瞬時電力計測値, get
@@ -131,6 +137,7 @@ let mainEL = {
 			'81': [0x0f], // 設置場所, set, get, inf
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x01],  // 瞬時消費電力計測値, unsigned short
 			'88': [0x42], // 異常状態, 0x42 = 異常無, get
 			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
 			'8b': [0x00, 0x02], // 事業場コード
@@ -139,7 +146,7 @@ let mainEL = {
 			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
 			'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
 			'9e': [0x03, 0x80, 0x81, 0xb6],  // set map, 1 Byte目は個数, get
-			'9f': [0x0e, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xb6], // get map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xb6], // get map, 1 Byte目は個数, get
 			// uniq
 			'b6': [0x42] // 点灯モード設定, set, get
 		}
@@ -223,7 +230,6 @@ let mainEL = {
 		mainEL.recv_callback(rinfo, els, error);
 	},
 
-
 	//////////////////////////////////////////////////////////////////////
 	// ELの処理開始
 	start: async function( _config, receive_cb, change_cb ) {
@@ -242,6 +248,8 @@ let mainEL = {
 		mainEL.devState['013001']['83'][11] = mainEL.devState['029001']['83'][11] = mainEL.devState['026001']['83'][11] = mainEL.devState['026f01']['83'][11] = mainEL.devState['001101']['83'][11] = mainEL.devState['028801']['83'][11] = EL.Node_details["83"][11];
 		mainEL.devState['013001']['83'][12] = mainEL.devState['029001']['83'][12] = mainEL.devState['026001']['83'][12] = mainEL.devState['026f01']['83'][12] = mainEL.devState['001101']['83'][12] = mainEL.devState['028801']['83'][12] = EL.Node_details["83"][12];
 
+		beginMeasureElectricEnergy();
+
 	},
 
 
@@ -251,6 +259,37 @@ let mainEL = {
 	// 文字列0をつなげて，後ろから2文字分スライスする
 	Byte2HexString: function (byte) {
 		return (("0" + byte.toString(16)).slice(-2));
+	},
+
+	// 消費電力取得
+	getInstantaneousPower: function (eoj) {
+		let array = mainEL.devState[eoj]['84'];
+		let ret = array[0] * 256 + array[1];
+		return ret;
+	},
+
+	setInstantaneousPower: function( u16 ) {
+		let array = [ u16/256, u16%256];
+		return array;
+	},
+
+	// 消費電力のバーチャル計測
+	beginMeasureElectricEnergy: function () {
+		measureTask = cron.schedule( '*/1 * * * *', () => {
+			// 瞬時電力計測値
+			let instantaneousPower = 0;
+			instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
+			instantaneousPower += mainEL.getInstantaneousPower('013001');  // エアコン
+			instantaneousPower += mainEL.getInstantaneousPower('026001');  // ブラインド
+			instantaneousPower += mainEL.getInstantaneousPower('026f01');  // 電子錠
+			instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
+			instantaneousPower *= 100;  // 0.01kW単位なので100倍する
+			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(instantaneousPower);
+		});
+	},
+
+	endMeasureElectricEnegy: function () {
+		measureTask.stop();
 	},
 
 

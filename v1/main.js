@@ -333,7 +333,8 @@ app.on("activate", () => {
 // window全部閉じたらappも終了する
 app.on('window-all-closed', async () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.window-all-closed'):0;
-	EL.release();
+	await mainEL.endMeasureElectricEnegy();
+	await EL.release();
 	app.quit();	// macだろうとプロセスはkillしちゃう
 });
 
