@@ -9,7 +9,7 @@
 const fs   = require('fs');
 const path = require('path');
 const EL = require('echonet-lite');
-const cron = require('cron-node');
+const cron = require('node-cron');
 
 // 基礎設定
 const appDir     = process.env.NODE_ENV === 'development' ? __dirname : __dirname;
