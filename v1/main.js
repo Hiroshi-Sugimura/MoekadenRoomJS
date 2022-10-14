@@ -18,6 +18,7 @@ const appname  = 'MoekadenRoomJS';
 const appDir   = process.env.NODE_ENV === 'development' ? __dirname : __dirname;
 const isWin    = process.platform == "win32" ? true : false;
 const isMac    = process.platform == "darwin" ? true : false;
+const isLinux  = process.platform == "linux" ? true : false;
 const userHome = process.env[ isWin ? "USERPROFILE" : "HOME"];
 const isDevelopment = process.env.NODE_ENV == 'development'
 
@@ -37,8 +38,8 @@ let mainWindow = null;
 
 // アプリのconfig
 let config = {
-	width: isWin?860: isMac?854 :860,  // win = innerWidth:854 + 16
-	height: isWin?529: isMac?480 :529,   // innerHight:480 + 59
+  width: isWin?860: isMac?854 : isLinux? 854: 860,  // win = innerWidth:854 + 16
+  height: isWin?529: isMac?480 : isLinux? 480: 529,   // innerHight:480 + 59
 	// debug: true
 	debug: false,
 	EL: {
