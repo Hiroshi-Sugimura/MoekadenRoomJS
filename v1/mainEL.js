@@ -248,7 +248,7 @@ let mainEL = {
 		mainEL.devState['013001']['83'][11] = mainEL.devState['029001']['83'][11] = mainEL.devState['026001']['83'][11] = mainEL.devState['026f01']['83'][11] = mainEL.devState['001101']['83'][11] = mainEL.devState['028801']['83'][11] = EL.Node_details["83"][11];
 		mainEL.devState['013001']['83'][12] = mainEL.devState['029001']['83'][12] = mainEL.devState['026001']['83'][12] = mainEL.devState['026f01']['83'][12] = mainEL.devState['001101']['83'][12] = mainEL.devState['028801']['83'][12] = EL.Node_details["83"][12];
 
-		beginMeasureElectricEnergy();
+		mainEL.beginMeasureElectricEnergy();
 
 	},
 
@@ -275,7 +275,7 @@ let mainEL = {
 
 	// 消費電力のバーチャル計測
 	beginMeasureElectricEnergy: function () {
-		measureTask = cron.schedule( '*/1 * * * *', () => {
+		mainEL.measureTask = cron.schedule( '*/1 * * * *', () => {
 			// 瞬時電力計測値
 			let instantaneousPower = 0;
 			instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
@@ -289,7 +289,7 @@ let mainEL = {
 	},
 
 	endMeasureElectricEnegy: function () {
-		measureTask.stop();
+		mainEL.measureTask.stop();
 	},
 
 
