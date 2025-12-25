@@ -279,6 +279,49 @@ let mainEL = {
 		return array;
 	},
 
+	// 瞬時電流計測値取得（R相）- A単位で返す
+	getInstantaneousCurrentR: function () {
+		let instantaneousPower = 0;
+		instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
+		instantaneousPower += mainEL.getInstantaneousPower('013001');  // エアコン
+		instantaneousPower += mainEL.getInstantaneousPower('026001');  // ブラインド
+		instantaneousPower += mainEL.getInstantaneousPower('026f01');  // 電子錠
+		instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
+		return (instantaneousPower * 100) / 100.0;  // W単位を電力から電流に変換（W/100V ≈ A）
+	},
+
+	// 瞬時電流計測値取得（T相）- 単相2線式なので基本的にR相と同じ
+	getInstantaneousCurrentT: function () {
+		return mainEL.getInstantaneousCurrentR();
+	},
+
+	// 4バイト整数を4バイト配列に変換（ビッグエンディアン）
+	setIntValueTo4Bytes: function( inval ) {
+		const outArray = [];
+		outArray[0] = (inval >> 24) & 0xFF;
+		outArray[1] = (inval >> 16) & 0xFF;
+		outArray[2] = (inval >> 8) & 0xFF;
+		outArray[3] = inval & 0xFF;
+		return outArray;
+	},
+
+	// 瞬時電流計測値の更新（EPC e8）
+	updateInstantaneousCurrents: function() {
+		const r = mainEL.getInstantaneousCurrentR();
+		const t = mainEL.getInstantaneousCurrentT();
+
+		// 0.1A単位で10倍する
+		const rValue = Math.floor(r * 10);
+		const tValue = Math.floor(t * 10);
+
+		// 4バイト整数に変換
+		const rBuf = mainEL.setIntValueTo4Bytes(rValue);
+		const tBuf = mainEL.setIntValueTo4Bytes(tValue);
+
+		// 下位2バイトのみを返す（R相2バイト + T相2バイト）
+		mainEL.devState['028801']['e8'] = [rBuf[2], rBuf[3], tBuf[2], tBuf[3]];
+	},
+
 	// 消費電力のバーチャル計測
 	beginMeasureElectricEnergy: function () {
 		// 初期化：スマートメーター履歴データの初期化
@@ -294,6 +337,9 @@ let mainEL = {
 			instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
 			instantaneousPower *= 100;  // 0.01kW単位なので100倍する
 			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(instantaneousPower);
+
+			// 瞬時電流計測値の更新（EPC e8）
+			mainEL.updateInstantaneousCurrents();
 
 			// スマートメーター履歴データの更新
 			mainEL.updateSmartMeterLog();
