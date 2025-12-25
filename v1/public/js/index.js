@@ -99,7 +99,123 @@ function onLoad() {
 		ctx.drawImage( IMG_BEAR_BASE, 768, 211 );
 
 		devs.draw( ctx, devState );
+
+		// スマートメーター表示
+		drawSmartMeterData( ctx, devState );
 	};
+
+	// スマートメーターグラフ描画用のキャッシュと更新管理
+	let smartMeterDataCache = null;
+	let smartMeterDataUpdateCountdown = 0;
+	const SMART_METER_DATA_UPDATE_INTERVAL = 30;  // フレーム単位での更新間隔
+
+	function rebuildSmartMeterCache( smartMeter ) {
+		if( !smartMeter || !smartMeter.cumLog || smartMeter.cumLog.length < 2 ) return null;
+		const unitPower = (smartMeter.e1 && smartMeter.e1.length > 0) ? smartMeter.e1[0] : 0x02;
+		const cumUnit = Math.pow(10, (unitPower < 5 ? -unitPower : unitPower - 10));
+
+		const values = [];
+		let maxVal = 0;
+
+		// cumLogは累積kWh(単位はe1)なので差分をとって30分平均電力(W)に換算
+		for( let i = 1; i < smartMeter.cumLog.length; i++ ) {
+			const prev = smartMeter.cumLog[i - 1];
+			const cur = smartMeter.cumLog[i];
+			if( prev < 0 || cur < 0 ) {
+				values.push(-1);
+				continue;
+			}
+
+			const deltaKWh = (cur - prev) * cumUnit;  // kWh
+			const avgW = deltaKWh <= 0 ? 0 : Math.round(deltaKWh * 1000 * 2); // 30分なので2倍してW換算
+			values.push(avgW);
+			if( avgW > maxVal ) maxVal = avgW;
+		}
+
+		if( values.length === 0 ) return null;
+		// 先頭の点をつなぐために頭に同じ値を入れる
+		values.unshift(values[0]);
+		maxVal = Math.max(maxVal, 1);
+		return { values, maxVal };
+	}
+
+	function drawSmartMeterData( ctx, devState ) {
+		// グラフエリアの描画（データ有無にかかわらず枠は出す）
+		const sm_x = 10, sm_y = 400, sm_w = 300, sm_h = 70;
+		ctx.fillStyle = 'rgba(0, 102, 153, 0.5)';
+		ctx.fillRect( sm_x, sm_y, sm_w, sm_h );
+
+		// キャッシュの初期化と定期更新
+		if( smartMeterDataCache == null || --smartMeterDataUpdateCountdown < 0 ) {
+			smartMeterDataUpdateCountdown = SMART_METER_DATA_UPDATE_INTERVAL;
+			smartMeterDataCache = rebuildSmartMeterCache( devState.smartmeter );
+		}
+
+		if( !smartMeterDataCache ) {
+			// データなしの場合は枠だけ残して終了
+			ctx.fillStyle = '#FFFFFF';
+			ctx.font = '13px Arial';
+			ctx.fillText( 'Smart meter / waiting data...', 15, 415 );
+			return;
+		}
+
+		const { values, maxVal } = smartMeterDataCache;
+
+		// 補助線（1日＝48スロットの区切り）
+		ctx.strokeStyle = '#B4B4B4';
+		ctx.lineWidth = 1;
+		for( let i = 0; i < values.length; i++ ) {
+			if( i > 0 && (i % 48) === 0 ) {
+				const gx = sm_x + sm_w * i / values.length;
+				ctx.beginPath();
+				ctx.moveTo(gx, sm_y);
+				ctx.lineTo(gx, sm_y + sm_h);
+				ctx.stroke();
+			}
+		}
+
+		// グラフ描画
+		const sm_mul = (sm_h - 8) / maxVal;
+		let prev_x = sm_x;
+		let prev_val = values[0];
+
+		for( let i = 1; i < values.length; i++ ) {
+			const cur_x = sm_x + sm_w * i / values.length;
+			const cur_val = values[i];
+
+			const py = sm_y + sm_h - Math.max(0, Math.min(prev_val, maxVal)) * sm_mul;
+			const cy = sm_y + sm_h - Math.max(0, Math.min(cur_val, maxVal)) * sm_mul;
+
+			ctx.beginPath();
+			if( prev_val >= 0 && cur_val >= 0 ) {
+				ctx.strokeStyle = '#FFFFFF';
+				ctx.lineWidth = 2;
+				ctx.moveTo(prev_x, py);
+				ctx.lineTo(cur_x, cy);
+				ctx.stroke();
+			} else {
+				ctx.strokeStyle = '#FF0000';
+				ctx.lineWidth = 2;
+				ctx.moveTo(prev_x, sm_y + sm_h - 1);
+				ctx.lineTo(cur_x, sm_y + sm_h - 1);
+				ctx.stroke();
+			}
+
+			prev_x = cur_x;
+			prev_val = cur_val;
+		}
+
+		// 瞬時電力表示と凡例
+		ctx.fillStyle = '#FFFFFF';
+		ctx.font = '13px Arial';
+		if( devState.smartmeter ) {
+			const instantaneousPower = devState.smartmeter.instantaneousPower || 0;
+			ctx.fillText( 'Smart meter / Using ' + instantaneousPower + ' W', 15, 415 );
+			ctx.fillText( 'Avg (30min) W', 15, 429 );
+			ctx.fillText( 'Max ' + maxVal + ' W', 15, 443 );
+		}
+	}
+
 
 	//////////////////////////////////////////////////////////////////
 	// GUIのボタン処理

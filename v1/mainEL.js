@@ -28,12 +28,15 @@ let mainEL = {
 	lastLogUpdateTime: Date.now(),
 	SMART_METER_LOG_START_DAY: 2,  // 何日前の0:00からログ取得を開始したかを示す。0なら今日。
 	MAX_CUMENERGY_PER_HALF_HOUR: 0.1,  // 30分間の最大消費電力量（kWh）
+	lastEnergyUpdate: Date.now(),
+	baseEnergy: 0,  // 基本電力消費量（for baseEnergy calculation）
 
 	devState: {
 		'001101': {  // thermometer
 			// super
 			'80': [0x30], // 動作状態, on, get, inf
 			'81': [0x0f], // 設置場所, set, get, inf
+
 			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
 			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06], // identifier, initialize時に、renewNICList()できちんとセットする, get
 			'84': [0x00, 0x02],  // 瞬時消費電力計測値, unsigned short
@@ -322,12 +325,25 @@ let mainEL = {
 		mainEL.devState['028801']['e8'] = [rBuf[2], rBuf[3], tBuf[2], tBuf[3]];
 	},
 
+	// 瞬時電力値取得（W単位）- Processing版のgetInstantaneousEnergy()に相当
+	getInstantaneousEnergy: function() {
+		const e7 = mainEL.devState['028801']['e7'];
+		const instantaneousPower = (e7[0] * 256 + e7[1]);  // 0.01kW単位
+		return Math.floor(instantaneousPower * 10);  // W単位に変換
+	},
+
+	// 積算電力量単位を取得
+	getCumUnit: function() {
+		const b = mainEL.devState['028801']['e1'][0];
+		return Math.pow(10, (b < 5 ? -b : b - 10));
+	},
+
 	// 消費電力のバーチャル計測
 	beginMeasureElectricEnergy: function () {
 		// 初期化：スマートメーター履歴データの初期化
 		mainEL.initializeSmartMeterLog();
 
-		mainEL.measureTask = cron.schedule( '*/1 * * * *', () => {
+		mainEL.measureTask = cron.schedule( '* * * * * *', () => {
 			// 瞬時電力計測値
 			let instantaneousPower = 0;
 			instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
@@ -338,6 +354,9 @@ let mainEL = {
 			instantaneousPower *= 100;  // 0.01kW単位なので100倍する
 			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(instantaneousPower);
 
+			// 累積電力量を更新（30分スロットの累積値を加算）
+			mainEL.accumulateEnergyFromInstantaneous(instantaneousPower);
+
 			// 瞬時電流計測値の更新（EPC e8）
 			mainEL.updateInstantaneousCurrents();
 
@@ -347,7 +366,10 @@ let mainEL = {
 	},
 
 	endMeasureElectricEnegy: function () {
-		mainEL.measureTask.stop();
+		if( mainEL.measureTask ) {
+			mainEL.measureTask.stop();
+			mainEL.measureTask = null;
+		}
 	},
 
 	//////////////////////////////////////////////////////////////////////
@@ -358,12 +380,40 @@ let mainEL = {
 		const loglen = (mainEL.SMART_METER_LOG_START_DAY + 1) * 48;  // 1日48スロット（30分間隔）
 		mainEL.cumLog = [];
 		mainEL.cumLog[0] = 0;
+		mainEL.lastEnergyUpdate = Date.now();
 
 		// ランダムな電力量ログを生成
 		for (let i = 1; i < loglen; i++) {
 			mainEL.cumLog[i] = mainEL.cumLog[i - 1] + Math.random() * mainEL.MAX_CUMENERGY_PER_HALF_HOUR;
 		}
 		mainEL.lastLogUpdateTime = Date.now();
+	},
+
+	// 瞬時電力(W)を累積電力量ログに反映（1分間隔想定）
+	accumulateEnergyFromInstantaneous: function( instantaneousPowerW ) {
+		if( !mainEL.cumLog || mainEL.cumLog.length === 0 ) {
+			mainEL.initializeSmartMeterLog();
+		}
+
+		const now = Date.now();
+		const last = mainEL.lastEnergyUpdate || now;
+		const elapsedSec = Math.max(1, Math.round((now - last) / 1000)); // 少なくとも1秒として扱う
+		mainEL.lastEnergyUpdate = now;
+
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const storedDays = Math.floor(mainEL.cumLog.length / 48);
+		const currentIndex = Math.min(mainEL.cumLog.length - 1, (storedDays - 1) * 48 + latestHalfHour);
+
+		const deltaKWh = (instantaneousPowerW / 1000) * (elapsedSec / 3600); // Wh -> kWh（秒精度）
+		const base = mainEL.cumLog[currentIndex] || mainEL.cumLog[currentIndex - 1] || 0;
+		mainEL.cumLog[currentIndex] = base + deltaKWh;
+
+		// 未来スロットが現在値より小さければ揃えておく（単調増加を保証）
+		for( let i = currentIndex + 1; i < mainEL.cumLog.length; i++ ) {
+			if( mainEL.cumLog[i] < mainEL.cumLog[currentIndex] ) {
+				mainEL.cumLog[i] = mainEL.cumLog[currentIndex];
+			}
+		}
 	},
 
 	// 現在の30分スロットインデックスを取得

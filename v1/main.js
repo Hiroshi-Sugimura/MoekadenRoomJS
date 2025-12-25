@@ -34,6 +34,7 @@ require('date-utils');
 // electron設定とmain window
 app.disableHardwareAcceleration();
 let mainWindow = null;
+let drawTimer = null;  // periodic draw push
 
 
 // アプリのconfig
@@ -62,9 +63,15 @@ function sendDevState() {
 		curtain: mainEL.devState['026001'],
 		lock: mainEL.devState['026f01'],
 		thermometer: mainEL.devState['001101'],
-		smartmeter: mainEL.devState['028801']
+		smartmeter: {
+			...mainEL.devState['028801'],
+			instantaneousPower: mainEL.getInstantaneousEnergy(),  // W単位
+			cumLog: mainEL.cumLog,  // 履歴データ
+			e1: mainEL.devState['028801']['e1']  // 積算電力量単位
+		}
 	} );
 }
+
 
 
 
@@ -86,21 +93,21 @@ let ELStart = async function() {
 	EL.sendOPC1( EL.EL_Multi6, '0ef001', '0ef001', EL.INF, '80', '30');
 };
 
-
 //////////////////////////////////////////////////////////////////////
 // Communication for Electron's Renderer process
 //////////////////////////////////////////////////////////////////////
 ipcMain.handle( 'already', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already, mainEL.devState:', mainEL.devState):0;
-
-	// 一旦初期値を送る
 	sendDevState();
-	ELStart();
+		ELStart();
+
+		// periodic push to renderer so graphs update
+		if( !drawTimer ) {
+			drawTimer = setInterval(() => {
+				try { sendDevState(); } catch(e) { /* swallow */ }
+			}, 1000);
+		}
 });
-
-
-// GUIのボタン処理
-// 鍵, 026f
 ipcMain.handle( 'Lockkey', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Lockkey'):0;
 
@@ -295,8 +302,8 @@ async function createWindow() {
 			preload: path.join(__dirname, 'preload.js')
 		}
 	});
-	menuInitialize();
-	// mainWindow.loadURL( path.join(__dirname, 'public', 'index.htm') );  // MacだとloadURLが動かない
+		//////////////////////////////////////////////////////////////////////
+		// Communication for Electron's Renderer process
 	mainWindow.loadFile( path.join(__dirname, 'public', 'index.htm') );
 
 	if (config.debug) { // debugモードならDebugGUIひらく
@@ -334,6 +341,7 @@ app.on("activate", () => {
 // window全部閉じたらappも終了する
 app.on('window-all-closed', async () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.window-all-closed'):0;
+	if( drawTimer ) { clearInterval(drawTimer); drawTimer = null; }
 	await mainEL.endMeasureElectricEnegy();
 	await EL.release();
 	app.quit();	// macだろうとプロセスはkillしちゃう

@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('ipc', {
 	// renderer to main
 	// rendererが準備できた
 	already: async () => {
-		ipcRenderer.invoke('already');
+		return await ipcRenderer.invoke('already');
 	},
 
 	//======================================================
@@ -121,5 +121,3 @@ contextBridge.exposeInMainWorld('ipc', {
 	}
 
 });
-
-
