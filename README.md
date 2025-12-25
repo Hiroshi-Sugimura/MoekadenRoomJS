@@ -6,7 +6,7 @@
 
 # manual
 
-https://hiroshi-sugimura.github.io/hue-handler.js/
+https://hiroshi-sugimura.github.io/MoekadenRoomJS/
 
 
 # Binary
