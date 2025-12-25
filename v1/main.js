@@ -55,6 +55,11 @@ let config = {
 //////////////////////////////////////////////////////////////////////
 // 内部関数
 
+/**
+ * レンダラーへ現在の機器状態を送信する。
+ * smartmeterは追加情報（瞬時電力W、履歴cumLog、単位e1）を含む。
+ * @returns {void}
+ */
 function sendDevState() {
 	// 機器の状態変化があれば画面に反映
 	sendIPCMessage( 'draw', {
@@ -75,6 +80,11 @@ function sendDevState() {
 
 
 
+/**
+ * ECHONET Liteの初期化と受信ハンドラ設定を行う。
+ * 起動時にノードプロファイルのINFを送信する。
+ * @returns {Promise<void>}
+ */
 let ELStart = async function() {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| ELStart()'):0;
 
@@ -96,6 +106,13 @@ let ELStart = async function() {
 //////////////////////////////////////////////////////////////////////
 // Communication for Electron's Renderer process
 //////////////////////////////////////////////////////////////////////
+/**
+ * IPC 'already' 初期化ハンドラ。
+ * レンダラー準備完了時に初期状態を送出し、ELを開始、以後1秒毎に状態更新を送信。
+ * @param {Electron.IpcMainInvokeEvent} event - IPCイベント
+ * @param {*} arg - 追加引数（未使用）
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'already', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- already, mainEL.devState:', mainEL.devState):0;
 	sendDevState();
@@ -108,6 +125,12 @@ ipcMain.handle( 'already', async (event, arg) => {
 			}, 1000);
 		}
 });
+/**
+ * IPC 'Lockkey'：電子錠を施錠に変更。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Lockkey', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Lockkey'):0;
 
@@ -118,6 +141,12 @@ ipcMain.handle( 'Lockkey', async (event, arg) => {
 	sendDevState();
 });
 
+/**
+ * IPC 'Unlockkey'：電子錠を解錠に変更。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Unlockkey', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Unlockkey'):0;
 
@@ -128,6 +157,12 @@ ipcMain.handle( 'Unlockkey', async (event, arg) => {
 
 
 // カーテン, 0260
+/**
+ * IPC 'Closecurtain'：カーテンを閉じる。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Closecurtain', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Closecurtain'):0;
 
@@ -136,6 +171,12 @@ ipcMain.handle( 'Closecurtain', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '026001', '05ff01', '73', 'e0', mainEL.devState['026001']['e0']);
 });
 
+/**
+ * IPC 'Opencurtain'：カーテンを開く。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Opencurtain', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Opencurtain'):0;
 
@@ -145,6 +186,12 @@ ipcMain.handle( 'Opencurtain', async (event, arg) => {
 });
 
 // ライト, 0290
+/**
+ * IPC 'Onlight'：照明をオン。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Onlight', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onlight'):0;
 
@@ -153,6 +200,12 @@ ipcMain.handle( 'Onlight', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '029001', '05ff01', '73', '80', mainEL.devState['029001']['80'] );
 });
 
+/**
+ * IPC 'Offlight'：照明をオフ。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Offlight', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offlight'):0;
 
@@ -162,6 +215,12 @@ ipcMain.handle( 'Offlight', async (event, arg) => {
 });
 
 // 温度計, 0011
+/**
+ * IPC 'Uptemperature'：温度計表示値を+1.0℃。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Uptemperature', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uptemperature'):0;
 
@@ -180,6 +239,12 @@ ipcMain.handle( 'Uptemperature', async (event, arg) => {
 	sendDevState();
 });
 
+/**
+ * IPC 'Downtemperature'：温度計表示値を-1.0℃。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Downtemperature', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downtemperature'):0;
 
@@ -200,6 +265,12 @@ ipcMain.handle( 'Downtemperature', async (event, arg) => {
 
 
 // エアコン上段, 0130
+/**
+ * IPC 'Onaircon'：エアコンをオン。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Onaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Onaircon'):0;
 
@@ -208,6 +279,12 @@ ipcMain.handle( 'Onaircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', '80', mainEL.devState['013001']['80']);
 });
 
+/**
+ * IPC 'Offaircon'：エアコンをオフ。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Offaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Offaircon'):0;
 
@@ -216,6 +293,12 @@ ipcMain.handle( 'Offaircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', '80', mainEL.devState['013001']['80']);
 });
 
+/**
+ * IPC 'Upaircon'：設定温度を+1。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Upaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Uparicon'):0;
 
@@ -231,6 +314,12 @@ ipcMain.handle( 'Upaircon', async (event, arg) => {
 	sendDevState();
 });
 
+/**
+ * IPC 'Downaircon'：設定温度を-1。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Downaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Downaircon'):0;
 
@@ -245,6 +334,12 @@ ipcMain.handle( 'Downaircon', async (event, arg) => {
 });
 
 // エアコン下段
+/**
+ * IPC 'Autoaircon'：運転モードを自動に。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Autoaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Autoaircon'):0;
 
@@ -253,6 +348,12 @@ ipcMain.handle( 'Autoaircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', 'b0', mainEL.devState['013001']['b0']);
 });
 
+/**
+ * IPC 'Coolaircon'：運転モードを冷房に。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Coolaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Coolaircon'):0;
 
@@ -261,6 +362,12 @@ ipcMain.handle( 'Coolaircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', 'b0', mainEL.devState['013001']['b0']);
 });
 
+/**
+ * IPC 'Heataircon'：運転モードを暖房に。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Heataircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Heataircon'):0;
 
@@ -269,6 +376,12 @@ ipcMain.handle( 'Heataircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', 'b0', mainEL.devState['013001']['b0']);
 });
 
+/**
+ * IPC 'Dryaircon'：運転モードを除湿に。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Dryaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Dryaircon'):0;
 
@@ -277,6 +390,12 @@ ipcMain.handle( 'Dryaircon', async (event, arg) => {
 	EL.sendOPC1(EL.EL_Multi, '013001', '05ff01', '73', 'b0', mainEL.devState['013001']['b0']);
 });
 
+/**
+ * IPC 'Windaircon'：運転モードを送風に。
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {*} arg
+ * @returns {Promise<void>}
+ */
 ipcMain.handle( 'Windaircon', async (event, arg) => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.ipcMain <- Windaircon'):0;
 
@@ -289,6 +408,11 @@ ipcMain.handle( 'Windaircon', async (event, arg) => {
 //////////////////////////////////////////////////////////////////////
 // foreground
 // ここがEntrypointと考えても良い
+/**
+ * メインウィンドウを作成し、UIをロードする。
+ * DevToolsはdebugフラグが真のときに開く。
+ * @returns {Promise<void>}
+ */
 async function createWindow() {
 	// 画面の起動
 	mainWindow = new BrowserWindow({
@@ -323,6 +447,10 @@ async function createWindow() {
 	});
 };
 
+/**
+ * Electron 'ready' イベント。
+ * アプリ準備完了時にメイン画面を生成。
+ */
 app.on('ready', async () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.ready'):0;
 	createWindow();
@@ -330,6 +458,10 @@ app.on('ready', async () => {
 
 // アプリケーションがアクティブになった時の処理
 // （Macだと、Dockがクリックされた時）
+/**
+ * Electron 'activate' イベント（主にMac）。
+ * ウィンドウが無ければ再作成。
+ */
 app.on("activate", () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.active'):0;
 	// メインウィンドウが消えている場合は再度メインウィンドウを作成する
@@ -339,6 +471,10 @@ app.on("activate", () => {
 });
 
 // window全部閉じたらappも終了する
+/**
+ * 全ウィンドウが閉じられたときの終了処理。
+ * 計測タスク停止、EL解放、アプリ終了。
+ */
 app.on('window-all-closed', async () => {
 	config.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| main.app.on.window-all-closed'):0;
 	if( drawTimer ) { clearInterval(drawTimer); drawTimer = null; }
@@ -383,6 +519,10 @@ const menuItems = [{
 }];
 
 
+/**
+ * アプリケーションメニューを初期化する。
+ * @returns {void}
+ */
 function menuInitialize() {
 	let menu = Menu.buildFromTemplate(menuItems);
 	Menu.setApplicationMenu(menu);
@@ -391,6 +531,12 @@ function menuInitialize() {
 
 
 // IPC通信の定式
+/**
+ * レンダラープロセスへIPCメッセージを送信。
+ * @param {string} cmdStr - コマンド文字列（例: 'draw'）
+ * @param {*} argStr - 引数（オブジェクト等）
+ * @returns {void}
+ */
 let sendIPCMessage = function( cmdStr, argStr ) {
 	if( mainWindow != null && mainWindow.webContents != null ) {
 		mainWindow.webContents.send('to-renderer', JSON.stringify({ cmd: cmdStr, arg: argStr} ) );
@@ -399,6 +545,10 @@ let sendIPCMessage = function( cmdStr, argStr ) {
 
 
 // About this
+/**
+ * アプリ情報ダイアログを表示する。
+ * @returns {void}
+ */
 function aboutThis () {
 	const options = {
 		type: 'info',

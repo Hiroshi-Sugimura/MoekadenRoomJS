@@ -166,6 +166,12 @@ let mainEL = {
 	//////////////////////////////////////////////////////////////////////
 	// 内部
 	// EL受け取った後の処理
+	/**
+	 * ECHONET Lite受信ハンドラ。受信フレームを解析して各デバイス処理へ振り分ける。
+	 * @param {object} rinfo - 送信元情報（{ address, port }など）
+	 * @param {object} els - 解析済みELフレーム（ESV, SEOJ, DEOJ, DETAILsなど）
+	 * @param {Error|null} error - 受信時のエラー。通常はnull。
+	 */
 	ELreceived: function( rinfo, els, error ) {
 		if( error ) {
 			console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() error:', error);
@@ -241,6 +247,13 @@ let mainEL = {
 
 	//////////////////////////////////////////////////////////////////////
 	// ELの処理開始
+	/**
+	 * ECHONET Liteスタックを初期化し、測定を開始する。
+	 * @param {object} _config - 初期化用設定（EL.initializeに渡される）
+	 * @param {function} receive_cb - 受信イベント時のコールバック
+	 * @param {function} change_cb - 状態変更時のコールバック（未使用）
+	 * @returns {Promise<void>} 初期化完了後にresolveされる。
+	 */
 	start: async function( _config, receive_cb, change_cb ) {
 		mainEL.config = _config;
 		mainEL.objList = ['013001', '029001', '026001', '026f01', '001101', '028801'];
@@ -266,23 +279,42 @@ let mainEL = {
 	// 各デバイスの処理開始
 
 	// 文字列0をつなげて，後ろから2文字分スライスする
+	/**
+	 * 1バイト整数を2桁の16進文字列に整形する。
+	 * @param {number} byte - 0〜255の整数
+	 * @returns {string} 2桁の16進文字列（小文字）
+	 */
 	Byte2HexString: function (byte) {
 		return (("0" + byte.toString(16)).slice(-2));
 	},
 
 	// 消費電力取得
+	/**
+	 * 指定EOJの瞬時消費電力（W）を取得する。
+	 * @param {string} eoj - ECHONET LiteクラスEOJ（例: '013001'）
+	 * @returns {number} W単位の瞬時消費電力
+	 */
 	getInstantaneousPower: function (eoj) {
 		let array = mainEL.devState[eoj]['84'];
 		let ret = array[0] * 256 + array[1];
 		return ret;
 	},
 
+	/**
+	 * 16ビットの電力値を上位/下位バイト配列に変換する。
+	 * @param {number} u16 - 0〜65535の整数（四捨五入して範囲にクランプ）
+	 * @returns {number[]} [hi, lo] の2要素配列
+	 */
 	setInstantaneousPower: function( u16 ) {
 		const val = Math.max(0, Math.min(65535, Math.round(u16)));
 		return [ (val >> 8) & 0xFF, val & 0xFF ];
 	},
 
 	// 瞬時電流計測値取得（R相）- A単位で返す
+	/**
+	 * R相の瞬時電流値（A）を推定する。100V系想定でW/100。
+	 * @returns {number} R相電流[A]
+	 */
 	getInstantaneousCurrentR: function () {
 		let instantaneousPowerW = 0;
 		instantaneousPowerW += mainEL.getInstantaneousPower('001101');  // 温度計
@@ -294,11 +326,20 @@ let mainEL = {
 	},
 
 	// 瞬時電流計測値取得（T相）- 単相2線式なので基本的にR相と同じ
+	/**
+	 * T相の瞬時電流値（A）を返す。単相2線式想定でR相と同値。
+	 * @returns {number} T相電流[A]
+	 */
 	getInstantaneousCurrentT: function () {
 		return mainEL.getInstantaneousCurrentR();
 	},
 
 	// 4バイト整数を4バイト配列に変換（ビッグエンディアン）
+	/**
+	 * 32ビット整数をビッグエンディアンの4バイト配列へ変換する。
+	 * @param {number} inval - 32ビット整数
+	 * @returns {number[]} 4要素の配列 [b0, b1, b2, b3]
+	 */
 	setIntValueTo4Bytes: function( inval ) {
 		const outArray = [];
 		outArray[0] = (inval >> 24) & 0xFF;
@@ -309,6 +350,10 @@ let mainEL = {
 	},
 
 	// 瞬時電流計測値の更新（EPC e8）
+	/**
+	 * スマートメーターEPC e8（瞬時電流）をR/T相2バイトずつで更新する。
+	 * 0.1A単位の整数値にスケールして下位2バイトを格納する。
+	 */
 	updateInstantaneousCurrents: function() {
 		const r = mainEL.getInstantaneousCurrentR();
 		const t = mainEL.getInstantaneousCurrentT();
@@ -326,6 +371,10 @@ let mainEL = {
 	},
 
 	// 瞬時電力値取得（W単位）- Processing版のgetInstantaneousEnergy()に相当
+	/**
+	 * EPC e7（0.01kW単位）からWに変換して返す。
+	 * @returns {number} 瞬時電力[W]
+	 */
 	getInstantaneousEnergy: function() {
 		const e7 = mainEL.devState['028801']['e7'];
 		const instantaneousPower = (e7[0] * 256 + e7[1]);  // 0.01kW単位
@@ -333,12 +382,19 @@ let mainEL = {
 	},
 
 	// 積算電力量単位を取得
+	/**
+	 * EPC e1の単位コードからkWhの倍率を算出する。
+	 * @returns {number} 単位倍率（例: 0.01 = 0.01kWh）
+	 */
 	getCumUnit: function() {
 		const b = mainEL.devState['028801']['e1'][0];
 		return Math.pow(10, (b < 5 ? -b : b - 10));
 	},
 
 	// 消費電力のバーチャル計測
+	/**
+	 * 仮想計測ループを1秒周期で開始し、各種スマートメーター関連値を更新する。
+	 */
 	beginMeasureElectricEnergy: function () {
 		// 初期化：スマートメーター履歴データの初期化
 		mainEL.initializeSmartMeterLog();
@@ -368,6 +424,9 @@ let mainEL = {
 	},
 
 	// 各機器の瞬時消費電力(84)を更新
+	/**
+	 * 各デバイスの状態に応じてEPC 84（瞬時消費電力[W]）を更新する。
+	 */
 	updateDeviceInstantaneousConsumption: function() {
 		function setW(eoj, watts){
 			const w = Math.max(0, Math.round(watts));
@@ -409,6 +468,9 @@ let mainEL = {
 		setW('029001', lightOn ? (40 + Math.random()*40) : (1 + Math.random()));
 	},
 
+	/**
+	 * 計測タスクを停止する。多重停止を避けるためガードあり。
+	 */
 	endMeasureElectricEnegy: function () {
 		if( mainEL.measureTask ) {
 			mainEL.measureTask.stop();
@@ -420,6 +482,9 @@ let mainEL = {
 	// スマートメーター履歴データ管理
 
 	// 履歴データの初期化
+	/**
+	 * スマートメーター累積ログ（30分単位、過去n日分）を初期化する。
+	 */
 	initializeSmartMeterLog: function() {
 		const loglen = (mainEL.SMART_METER_LOG_START_DAY + 1) * 48;  // 1日48スロット（30分間隔）
 		mainEL.cumLog = [];
@@ -434,6 +499,10 @@ let mainEL = {
 	},
 
 	// 瞬時電力(W)を累積電力量ログに反映（1分間隔想定）
+	/**
+	 * 瞬時電力[W]から秒精度でkWhへ積算し、現在スロットへ反映する。
+	 * @param {number} instantaneousPowerW - 現在の瞬時電力[W]
+	 */
 	accumulateEnergyFromInstantaneous: function( instantaneousPowerW ) {
 		if( !mainEL.cumLog || mainEL.cumLog.length === 0 ) {
 			mainEL.initializeSmartMeterLog();
@@ -461,6 +530,10 @@ let mainEL = {
 	},
 
 	// 現在の30分スロットインデックスを取得
+	/**
+	 * 現在時刻に対応する30分スロット番号（0〜47）を返す。
+	 * @returns {number} スロット番号
+	 */
 	getLatestIndexHalfHour: function() {
 		const now = new Date();
 		const hour = now.getHours();
@@ -469,6 +542,12 @@ let mainEL = {
 	},
 
 	// 指定された日時のスロットの積算電力量を取得
+	/**
+	 * 指定日・スロットの累積電力量[kWh]を取得する。
+	 * @param {number} day - 0=今日, 1=昨日 …
+	 * @param {number} indexHalfHour - 30分スロット番号（0〜47）
+	 * @returns {number} kWh値。未来/範囲外は-1。
+	 */
 	getCumulativeEnergy: function(day, indexHalfHour) {
 		const latestHalfHour = mainEL.getLatestIndexHalfHour();
 		const loglen = mainEL.cumLog.length;
@@ -492,6 +571,9 @@ let mainEL = {
 	},
 
 	// スマートメーター履歴データの定期更新
+	/**
+	 * 30分境界でログ拡張し、EPC e2/eAの配列を更新する。
+	 */
 	updateSmartMeterLog: function() {
 		const now = Date.now();
 		const latestHalfHour = mainEL.getLatestIndexHalfHour();
@@ -515,6 +597,9 @@ let mainEL = {
 	},
 
 	// EPC e2 履歴データの更新
+	/**
+	 * EPC e2（積算電力量計測値履歴1）を生成して更新する。
+	 */
 	updateHistoricalData: function() {
 		const day = mainEL.devState['028801']['e5'] ? mainEL.devState['028801']['e5'][0] : 0;
 		const loglen = mainEL.cumLog.length;
@@ -541,6 +626,9 @@ let mainEL = {
 	},
 
 	// EPC ea 最新の定時積算電力量の更新
+	/**
+	 * EPC ea（最新の定時積算電力量）を現在の30分インデックスで更新する。
+	 */
 	updateLatestFixedTimeMeasurement: function() {
 		const now = new Date();
 		const year = now.getFullYear();
@@ -580,6 +668,10 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// エアコン
+	/**
+	 * エアコンのGET処理で各EPC所持を確認するサブ関数。
+	 * @returns {boolean} EPCを所持していればtrue
+	 */
 	getAirconSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['013001'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -589,6 +681,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * エアコンのGET要求に応答する。複数EPCに対応。
+	 */
 	getAircon: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -618,6 +713,10 @@ let mainEL = {
 		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
+	/**
+	 * エアコンのSET要求サブ処理。EPCごとに値を検証・更新する。
+	 * @returns {boolean} 成功時true、失敗時false
+	 */
 	setAirconSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
@@ -705,6 +804,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * エアコンのSET要求に応答する。複数EPCに対応。
+	 */
 	setAircon: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -736,6 +838,9 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// ライト
+	/**
+	 * ライトのGET処理サブ。EPC所持確認。
+	 */
 	getLightSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['029001'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -745,6 +850,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * ライトのGET要求に応答する。複数EPC対応。
+	 */
 	getLight: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -774,6 +882,9 @@ let mainEL = {
 		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
+	/**
+	 * ライトのSET要求サブ処理。EPCごとのバリデーションと更新。
+	 */
 	setLightSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
@@ -819,6 +930,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * ライトのSET要求に応答する。複数EPC対応。
+	 */
 	setLight: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -851,6 +965,9 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// 鍵
+	/**
+	 * 施錠デバイスのGET処理サブ。EPC所持確認。
+	 */
 	getLockSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['026f01'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -860,6 +977,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * 施錠デバイスのGET要求に応答する。複数EPC対応。
+	 */
 	getLock: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -891,6 +1011,9 @@ let mainEL = {
 	},
 
 	// 個別EPC
+	/**
+	 * 施錠デバイスのSET要求サブ処理。EPCごとの検証と更新。
+	 */
 	setLockSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
@@ -920,6 +1043,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * 施錠デバイスのSET要求に応答する。複数EPC対応。
+	 */
 	setLock: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -953,6 +1079,9 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// カーテン
+	/**
+	 * カーテンのGET処理サブ。EPC所持確認。
+	 */
 	getCurtainSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['026001'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -962,6 +1091,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * カーテンのGET要求に応答する。複数EPC対応。
+	 */
 	getCurtain: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -993,6 +1125,9 @@ let mainEL = {
 	},
 
 	// 個別EPC
+	/**
+	 * カーテンのSET要求サブ処理。EPCごとの検証と更新。
+	 */
 	setCurtainSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
@@ -1022,6 +1157,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * カーテンのSET要求に応答する。複数EPC対応。
+	 */
 	setCurtain: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -1055,6 +1193,9 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// スマメ
+	/**
+	 * スマートメーターのGET処理サブ。EPC所持確認。
+	 */
 	getSmartmeterSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -1064,6 +1205,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * スマートメーターのGET要求に応答する。複数EPC対応。
+	 */
 	getSmartmeter: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -1094,6 +1238,9 @@ let mainEL = {
 		EL.sendArray( rinfo.address, arr.flat(Infinity) );
 	},
 
+	/**
+	 * スマートメーターのSET要求に応答。e5（履歴収集日）セット時はe2再生成。
+	 */
 	setSmartmeter: function(rinfo, els) {
 		for (let epc in els.DETAILs) {
 			if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
@@ -1120,6 +1267,9 @@ let mainEL = {
 
 	//----------------------------------------------------------------
 	// 温度計
+	/**
+	 * 温度計のGET処理サブ。EPC所持確認。
+	 */
 	getThermometerSub: function(rinfo, els, epc, edt) {
 		if (mainEL.devState['001101'][epc]) { // 持ってるEPCのとき
 			return true;
@@ -1129,6 +1279,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * 温度計のGET要求に応答する。複数EPC対応。
+	 */
 	getThermometer: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
@@ -1160,6 +1313,9 @@ let mainEL = {
 	},
 
 	// 個別EPC
+	/**
+	 * 温度計のSET要求サブ処理。EPCごとの検証と更新。
+	 */
 	setThermometerSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
@@ -1178,6 +1334,9 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
+	/**
+	 * 温度計のSET要求に応答する。複数EPC対応。
+	 */
 	setThermometer: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];

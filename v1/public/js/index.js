@@ -12,6 +12,9 @@
 // 他のサブモジュールをDOMContentLoadedにする
 window.addEventListener('load', onLoad);
 
+/**
+ * ページロード完了時の初期化。画像ロード・デバイス初期化・描画ループ準備を行う。
+ */
 function onLoad() {
 	console.log('## onLoad index.js');
 
@@ -45,6 +48,9 @@ function onLoad() {
 	// デバイス関係の設定は devs.json に逃がした
 
 	// 初回のセットアップ、画像ロード
+	/**
+	 * 画像とデバイスの初期化。全て読み込み完了したらalreadySignal()でmainへ通知。
+	 */
 	function setup() {
 		console.log('setup()');
 		IMG_EXTERIOR_WEATHER_SUNNY.onload = () => { img_loadedNum += 1; alreadySignal(); };
@@ -66,6 +72,9 @@ function onLoad() {
 		return;
 	};
 
+	/**
+	 * 画像とデバイス準備が揃ったことを検知し、初回のみmainへ'already'送信。
+	 */
 	function alreadySignal() {
 		// まだ全画像をロードできてないので描画しない
 		if( img_loadedNum < IMG_LOADED_MAX ) return;
@@ -82,6 +91,10 @@ function onLoad() {
 	};
 
 
+	/**
+	 * メイン描画関数。背景・家具・デバイス・スマートメーターを描画する。
+	 * @param {object} devState - mainから受け取った機器状態
+	 */
 	function draw( devState ) {
 		console.log('draw() img_loadedNum:', img_loadedNum);
 
@@ -109,6 +122,11 @@ function onLoad() {
 	let smartMeterDataUpdateCountdown = 0;
 	const SMART_METER_DATA_UPDATE_INTERVAL = 1;  // フレームごとに更新（リアルタイム）
 
+	/**
+	 * スマートメーターの累積ログから30分平均Wの配列を再構築する。
+	 * @param {object} smartMeter - スマートメーター状態（cumLog, e1 等）
+	 * @returns {{values:number[], maxVal:number}|null} グラフ用キャッシュ
+	 */
 	function rebuildSmartMeterCache( smartMeter ) {
 		if( !smartMeter || !smartMeter.cumLog || smartMeter.cumLog.length < 2 ) return null;
 		const unitPower = (smartMeter.e1 && smartMeter.e1.length > 0) ? smartMeter.e1[0] : 0x02;
@@ -139,6 +157,11 @@ function onLoad() {
 		return { values, maxVal };
 	}
 
+	/**
+	 * スマートメーターのグラフ領域を描画。データなしでも枠を表示。
+	 * @param {CanvasRenderingContext2D} ctx - 2Dコンテキスト
+	 * @param {object} devState - 機器状態（smartmeter含む）
+	 */
 	function drawSmartMeterData( ctx, devState ) {
 		// グラフエリアの描画（データ有無にかかわらず枠は出す）
 		const sm_x = 10, sm_y = 400, sm_w = 300, sm_h = 70;
@@ -237,6 +260,7 @@ function onLoad() {
 	const btnUnlockkey = document.getElementById('btnUnlockkey');
 	btnUnlockkey.addEventListener('click', btnUnlockkey_Click);
 
+	/** 鍵の施錠ボタン押下ハンドラ */
 	function btnLockkey_Click() {
 		console.log( 'btnLockkey_Click' );
 		if( btnUnlockkey.classList.contains('selected') ) {
@@ -250,6 +274,7 @@ function onLoad() {
 		window.ipc.Lockkey();
 	}
 
+	/** 鍵の解錠ボタン押下ハンドラ */
 	function btnUnlockkey_Click() {
 		console.log( 'btnUnlockkey_Click' );
 		if( btnLockkey.classList.contains('selected') ) {
@@ -269,6 +294,7 @@ function onLoad() {
 	const btnClosecurtain = document.getElementById('btnClosecurtain');
 	btnClosecurtain.addEventListener('click', btnClosecurtain_Click);
 
+	/** カーテンを閉じるボタン押下ハンドラ */
 	function btnClosecurtain_Click() {
 		console.log( 'btnClosecurtain_Click' );
 		if( btnOpencurtain.classList.contains('selected') ) {
@@ -282,6 +308,7 @@ function onLoad() {
 		window.ipc.Closecurtain();
 	}
 
+	/** カーテンを開くボタン押下ハンドラ */
 	function btnOpencurtain_Click() {
 		console.log( 'btnOpencurtain_Click' );
 		if( btnClosecurtain.classList.contains('selected') ) {
@@ -300,6 +327,7 @@ function onLoad() {
 	const btnOfflight = document.getElementById('btnOfflight');
 	btnOfflight.addEventListener('click', btnOfflight_Click);
 
+	/** ライト消灯ボタン押下ハンドラ */
 	function btnOfflight_Click() {
 		console.log( 'btnOfflight_Click' );
 		if( btnOnlight.classList.contains('selected') ) {
@@ -313,6 +341,7 @@ function onLoad() {
 		window.ipc.Offlight();
 	}
 
+	/** ライト点灯ボタン押下ハンドラ */
 	function btnOnlight_Click() {
 		console.log( 'btnOnilght_Click' );
 		if( btnOfflight.classList.contains('selected') ) {
@@ -332,11 +361,13 @@ function onLoad() {
 	const btnDowntemperature = document.getElementById('btnDowntemperature');
 	btnDowntemperature.addEventListener('click', btnDowntemperature_Click);
 
+	/** 温度計+1ボタン押下ハンドラ */
 	function btnUptemperature_Click() {
 		console.log( 'btnOfflight_Click' );
 		window.ipc.Uptemperature();
 	}
 
+	/** 温度計-1ボタン押下ハンドラ */
 	function btnDowntemperature_Click() {
 		console.log( 'btnDowntemperature_Click' );
 
@@ -351,6 +382,7 @@ function onLoad() {
 	const btnOffaircon = document.getElementById('btnOffaircon');
 	btnOffaircon.addEventListener('click', btnOffaircon_Click);
 
+	/** エアコン停止ボタン押下ハンドラ */
 	function btnOffaircon_Click() {
 		console.log( 'btnOffaircon_Click' );
 		if( btnOnaircon.classList.contains('selected') ) {
@@ -364,6 +396,7 @@ function onLoad() {
 		window.ipc.Offaircon();
 	}
 
+	/** エアコン開始ボタン押下ハンドラ */
 	function btnOnaircon_Click() {
 		console.log( 'btnOnaircon_Click' );
 		if( btnOffaircon.classList.contains('selected') ) {
@@ -381,11 +414,13 @@ function onLoad() {
 	const btnDownaircon = document.getElementById('btnDownaircon');
 	btnDownaircon.addEventListener('click', btnDownaircon_Click);
 
+	/** エアコン設定温度+1押下ハンドラ */
 	function btnUpaircon_Click() {
 		console.log( 'btnUpaircon_Click' );
 		window.ipc.Upaircon();
 	}
 
+	/** エアコン設定温度-1押下ハンドラ */
 	function btnDownaircon_Click() {
 		console.log( 'btnDownaircon_Click' );
 
@@ -406,6 +441,7 @@ function onLoad() {
 	const btnWindaircon = document.getElementById('btnWindaircon');
 	btnWindaircon.addEventListener('click', btnWindaircon_Click);
 
+	/** エアコン自動モードボタン押下ハンドラ */
 	function btnAutoaircon_Click() {
 		console.log( 'btnAutoaircon_Click' );
 		if( !btnAutoaircon.classList.contains('selected') ) {
@@ -428,6 +464,7 @@ function onLoad() {
 
 	}
 
+	/** エアコン冷房モードボタン押下ハンドラ */
 	function btnCoolaircon_Click() {
 		console.log( 'btnCoolaircon_Click' );
 		if( btnAutoaircon.classList.contains('selected') ) {
@@ -449,6 +486,7 @@ function onLoad() {
 		window.ipc.Coolaircon();
 	}
 
+	/** エアコン暖房モードボタン押下ハンドラ */
 	function btnHeataircon_Click() {
 		console.log( 'btnHeataircon_Click' );
 		if( btnAutoaircon.classList.contains('selected') ) {
@@ -470,6 +508,7 @@ function onLoad() {
 		window.ipc.Heataircon();
 	}
 
+	/** エアコン除湿モードボタン押下ハンドラ */
 	function btnDryaircon_Click() {
 		console.log( 'btnDryaircon_Click' );
 		if( btnAutoaircon.classList.contains('selected') ) {
@@ -492,6 +531,7 @@ function onLoad() {
 	}
 
 
+	/** エアコン送風モードボタン押下ハンドラ */
 	function btnWindaircon_Click() {
 		console.log( 'btnWindaircon_Click' );
 		if( btnAutoaircon.classList.contains('selected') ) {
