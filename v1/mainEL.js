@@ -278,19 +278,19 @@ let mainEL = {
 	},
 
 	setInstantaneousPower: function( u16 ) {
-		let array = [ u16/256, u16%256];
-		return array;
+		const val = Math.max(0, Math.min(65535, Math.round(u16)));
+		return [ (val >> 8) & 0xFF, val & 0xFF ];
 	},
 
 	// 瞬時電流計測値取得（R相）- A単位で返す
 	getInstantaneousCurrentR: function () {
-		let instantaneousPower = 0;
-		instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
-		instantaneousPower += mainEL.getInstantaneousPower('013001');  // エアコン
-		instantaneousPower += mainEL.getInstantaneousPower('026001');  // ブラインド
-		instantaneousPower += mainEL.getInstantaneousPower('026f01');  // 電子錠
-		instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
-		return (instantaneousPower * 100) / 100.0;  // W単位を電力から電流に変換（W/100V ≈ A）
+		let instantaneousPowerW = 0;
+		instantaneousPowerW += mainEL.getInstantaneousPower('001101');  // 温度計
+		instantaneousPowerW += mainEL.getInstantaneousPower('013001');  // エアコン
+		instantaneousPowerW += mainEL.getInstantaneousPower('026001');  // ブラインド
+		instantaneousPowerW += mainEL.getInstantaneousPower('026f01');  // 電子錠
+		instantaneousPowerW += mainEL.getInstantaneousPower('029001');  // ライト
+		return instantaneousPowerW / 100.0;  // W→A（100V系と仮定）
 	},
 
 	// 瞬時電流計測値取得（T相）- 単相2線式なので基本的にR相と同じ
@@ -344,18 +344,20 @@ let mainEL = {
 		mainEL.initializeSmartMeterLog();
 
 		mainEL.measureTask = cron.schedule( '* * * * * *', () => {
-			// 瞬時電力計測値
-			let instantaneousPower = 0;
-			instantaneousPower += mainEL.getInstantaneousPower('001101');  // 温度計
-			instantaneousPower += mainEL.getInstantaneousPower('013001');  // エアコン
-			instantaneousPower += mainEL.getInstantaneousPower('026001');  // ブラインド
-			instantaneousPower += mainEL.getInstantaneousPower('026f01');  // 電子錠
-			instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
-			instantaneousPower *= 100;  // 0.01kW単位なので100倍する
-			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(instantaneousPower);
+			// 各機器の瞬時消費電力を更新（擬似的に状態に応じたWを付与）
+			mainEL.updateDeviceInstantaneousConsumption();
+			// 瞬時電力計測値（合算W）
+			let totalW = 0;
+			totalW += mainEL.getInstantaneousPower('001101');  // 温度計
+			totalW += mainEL.getInstantaneousPower('013001');  // エアコン
+			totalW += mainEL.getInstantaneousPower('026001');  // ブラインド
+			totalW += mainEL.getInstantaneousPower('026f01');  // 電子錠
+			totalW += mainEL.getInstantaneousPower('029001');  // ライト
+			// e7は0.01kW単位 → W/10
+			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(totalW / 10);
 
-			// 累積電力量を更新（30分スロットの累積値を加算）
-			mainEL.accumulateEnergyFromInstantaneous(instantaneousPower);
+			// 累積電力量を更新（秒精度）
+			mainEL.accumulateEnergyFromInstantaneous(totalW);
 
 			// 瞬時電流計測値の更新（EPC e8）
 			mainEL.updateInstantaneousCurrents();
@@ -363,6 +365,48 @@ let mainEL = {
 			// スマートメーター履歴データの更新
 			mainEL.updateSmartMeterLog();
 		});
+	},
+
+	// 各機器の瞬時消費電力(84)を更新
+	updateDeviceInstantaneousConsumption: function() {
+		function setW(eoj, watts){
+			const w = Math.max(0, Math.round(watts));
+			mainEL.devState[eoj]['84'] = [ Math.floor(w/256), w%256 ];
+		}
+
+		// Thermometer 001101: 約2W
+		setW('001101', 2 + (Math.random()-0.5));
+
+		// Aircon 013001
+		const acOn = mainEL.devState['013001']['80'][0] === 0x30;
+		const mode = mainEL.devState['013001']['b0'][0];
+		const setT = mainEL.devState['013001']['b3'][0];
+		let acW = 0;
+		if( acOn ){
+			switch(mode){
+				case 0x42: acW = 600 + Math.random()*600; break; // cool
+				case 0x43: acW = 800 + Math.random()*700; break; // heat
+				case 0x44: acW = 300 + Math.random()*300; break; // dry
+				case 0x45: acW = 60 + Math.random()*60;  break; // wind
+				case 0x41: default: acW = 700 + Math.random()*300; break; // auto/other
+			}
+			// 温度設定による微調整（26度基準）
+			const delta = Math.max(0, Math.abs((setT||26) - 26));
+			acW *= (1 + Math.min(0.3, delta*0.02));
+		}else{
+			acW = 5 + Math.random()*5; // standby
+		}
+		setW('013001', acW);
+
+		// Curtain 026001: 約3W
+		setW('026001', 3 + (Math.random()-0.5));
+
+		// Lock 026f01: 約1〜2W
+		setW('026f01', 1 + Math.random());
+
+		// Light 029001
+		const lightOn = mainEL.devState['029001']['80'][0] === 0x30;
+		setW('029001', lightOn ? (40 + Math.random()*40) : (1 + Math.random()));
 	},
 
 	endMeasureElectricEnegy: function () {

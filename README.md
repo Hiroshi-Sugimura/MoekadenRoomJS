@@ -5,4 +5,4 @@
 
 # Binary
 
-- Win, Mac: https://www.he.kanagawa-it.ac.jp/~sugimura/
+- Win, Mac: https://www.sugi-lab.net/

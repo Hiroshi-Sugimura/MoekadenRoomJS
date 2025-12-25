@@ -107,7 +107,7 @@ function onLoad() {
 	// スマートメーターグラフ描画用のキャッシュと更新管理
 	let smartMeterDataCache = null;
 	let smartMeterDataUpdateCountdown = 0;
-	const SMART_METER_DATA_UPDATE_INTERVAL = 30;  // フレーム単位での更新間隔
+	const SMART_METER_DATA_UPDATE_INTERVAL = 1;  // フレームごとに更新（リアルタイム）
 
 	function rebuildSmartMeterCache( smartMeter ) {
 		if( !smartMeter || !smartMeter.cumLog || smartMeter.cumLog.length < 2 ) return null;
@@ -160,6 +160,8 @@ function onLoad() {
 		}
 
 		const { values, maxVal } = smartMeterDataCache;
+		const instW = (devState.smartmeter && devState.smartmeter.instantaneousPower) ? devState.smartmeter.instantaneousPower : 0;
+		const scaledMax = Math.max(maxVal, instW);
 
 		// 補助線（1日＝48スロットの区切り）
 		ctx.strokeStyle = '#B4B4B4';
@@ -175,7 +177,7 @@ function onLoad() {
 		}
 
 		// グラフ描画
-		const sm_mul = (sm_h - 8) / maxVal;
+		const sm_mul = (sm_h - 8) / (scaledMax || 1);
 		let prev_x = sm_x;
 		let prev_val = values[0];
 
@@ -212,7 +214,17 @@ function onLoad() {
 			const instantaneousPower = devState.smartmeter.instantaneousPower || 0;
 			ctx.fillText( 'Smart meter / Using ' + instantaneousPower + ' W', 15, 415 );
 			ctx.fillText( 'Avg (30min) W', 15, 429 );
-			ctx.fillText( 'Max ' + maxVal + ' W', 15, 443 );
+			ctx.fillText( 'Max ' + Math.max(maxVal, instantaneousPower) + ' W', 15, 443 );
+
+			// 右端に瞬時電力のオーバレイ（現在値）
+			const ox = sm_x + sm_w - 2;
+			const oy = sm_y + sm_h - Math.max(0, Math.min(instantaneousPower, scaledMax)) * sm_mul;
+			ctx.strokeStyle = '#FFD700';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(ox, sm_y + sm_h);
+			ctx.lineTo(ox, oy);
+			ctx.stroke();
 		}
 	}
 
