@@ -32,7 +32,7 @@ jobs:
       - name: Generate JSDoc documentation
         run: |
           mkdir -p docs
-          jsdoc -c jsdoc.conf.json -t $(npm root -g)/docdash
+          jsdoc -r v1 -d docs -R README.md -t $(npm root -g)/docdash
 
       - name: Commit and push documentation
         run: |
