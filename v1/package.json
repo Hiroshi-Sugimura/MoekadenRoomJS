@@ -6,6 +6,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
+    "win": "electron-forge start",
+    "mac": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",

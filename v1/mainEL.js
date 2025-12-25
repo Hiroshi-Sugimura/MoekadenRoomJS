@@ -23,6 +23,12 @@ let mainEL = {
 	config: { },
 	measureTask: null,
 
+	// スマートメーター履歴データ
+	cumLog: [],  // 30分単位での積算電力量ログ
+	lastLogUpdateTime: Date.now(),
+	SMART_METER_LOG_START_DAY: 2,  // 何日前の0:00からログ取得を開始したかを示す。0なら今日。
+	MAX_CUMENERGY_PER_HALF_HOUR: 0.1,  // 30分間の最大消費電力量（kWh）
+
 	devState: {
 		'001101': {  // thermometer
 			// super
@@ -275,6 +281,9 @@ let mainEL = {
 
 	// 消費電力のバーチャル計測
 	beginMeasureElectricEnergy: function () {
+		// 初期化：スマートメーター履歴データの初期化
+		mainEL.initializeSmartMeterLog();
+
 		mainEL.measureTask = cron.schedule( '*/1 * * * *', () => {
 			// 瞬時電力計測値
 			let instantaneousPower = 0;
@@ -285,6 +294,9 @@ let mainEL = {
 			instantaneousPower += mainEL.getInstantaneousPower('029001');  // ライト
 			instantaneousPower *= 100;  // 0.01kW単位なので100倍する
 			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(instantaneousPower);
+
+			// スマートメーター履歴データの更新
+			mainEL.updateSmartMeterLog();
 		});
 	},
 
@@ -292,9 +304,139 @@ let mainEL = {
 		mainEL.measureTask.stop();
 	},
 
-
 	//////////////////////////////////////////////////////////////////////
-	// ECHONET Lite管理
+	// スマートメーター履歴データ管理
+
+	// 履歴データの初期化
+	initializeSmartMeterLog: function() {
+		const loglen = (mainEL.SMART_METER_LOG_START_DAY + 1) * 48;  // 1日48スロット（30分間隔）
+		mainEL.cumLog = [];
+		mainEL.cumLog[0] = 0;
+
+		// ランダムな電力量ログを生成
+		for (let i = 1; i < loglen; i++) {
+			mainEL.cumLog[i] = mainEL.cumLog[i - 1] + Math.random() * mainEL.MAX_CUMENERGY_PER_HALF_HOUR;
+		}
+		mainEL.lastLogUpdateTime = Date.now();
+	},
+
+	// 現在の30分スロットインデックスを取得
+	getLatestIndexHalfHour: function() {
+		const now = new Date();
+		const hour = now.getHours();
+		const min = now.getMinutes();
+		return hour * 2 + (min < 30 ? 0 : 1);
+	},
+
+	// 指定された日時のスロットの積算電力量を取得
+	getCumulativeEnergy: function(day, indexHalfHour) {
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const loglen = mainEL.cumLog.length;
+
+		if (loglen === 0) {
+			mainEL.initializeSmartMeterLog();
+		}
+
+		// 未来のデータ
+		if (day === 0 && indexHalfHour > latestHalfHour) {
+			return -1;
+		}
+
+		const storedDays = Math.floor(mainEL.cumLog.length / 48);
+		// ログ取得開始前
+		if (day >= storedDays) {
+			return -1;
+		}
+
+		return mainEL.cumLog[(storedDays - day - 1) * 48 + indexHalfHour];
+	},
+
+	// スマートメーター履歴データの定期更新
+	updateSmartMeterLog: function() {
+		const now = Date.now();
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const prevLatestHalfHour = mainEL.prevAccessLatestHalfHour || latestHalfHour;
+
+		// 30分ごとにスロットを更新
+		if (latestHalfHour !== prevLatestHalfHour && latestHalfHour === 0) {
+			// 新しい日付になった場合、ログを拡張
+			const newData = mainEL.cumLog[mainEL.cumLog.length - 1];
+			for (let i = 0; i < 48; i++) {
+				mainEL.cumLog.push(newData + Math.random() * mainEL.MAX_CUMENERGY_PER_HALF_HOUR);
+			}
+		}
+
+		mainEL.prevAccessLatestHalfHour = latestHalfHour;
+
+		// e2：履歴データの更新
+		mainEL.updateHistoricalData();
+		// ea：最新の定時積算電力量の更新
+		mainEL.updateLatestFixedTimeMeasurement();
+	},
+
+	// EPC e2 履歴データの更新
+	updateHistoricalData: function() {
+		const day = mainEL.devState['028801']['e5'] ? mainEL.devState['028801']['e5'][0] : 0;
+		const loglen = mainEL.cumLog.length;
+		const storedDays = Math.floor(loglen / 48);
+
+		// 履歴データ配列を構築
+		const histData = [];
+		histData.push(0);  // 積算履歴収集日（上位バイト）
+		histData.push(day);  // 積算履歴収集日（下位バイト）
+
+		// 24時間48コマ分のデータ
+		for (let si = 0; si < 48; si++) {
+			const energy = mainEL.getCumulativeEnergy(day, si);
+			const energyValue = energy >= 0 ? Math.floor(energy * 100) : 0xFFFFFFFE;  // 0.01kWh単位
+
+			// 4バイトのビッグエンディアン形式で格納
+			histData.push((energyValue >> 24) & 0xFF);
+			histData.push((energyValue >> 16) & 0xFF);
+			histData.push((energyValue >> 8) & 0xFF);
+			histData.push(energyValue & 0xFF);
+		}
+
+		mainEL.devState['028801']['e2'] = histData;
+	},
+
+	// EPC ea 最新の定時積算電力量の更新
+	updateLatestFixedTimeMeasurement: function() {
+		const now = new Date();
+		const year = now.getFullYear();
+		const month = now.getMonth() + 1;
+		const date = now.getDate();
+		const hour = now.getHours();
+		const min = now.getMinutes();
+		const sec = now.getSeconds();
+
+		const latestHalfHourIndex = mainEL.getLatestIndexHalfHour();
+
+		// 計測年月日（4バイト）
+		const eaData = [];
+		eaData.push((year >> 8) & 0xFF);
+		eaData.push(year & 0xFF);
+		eaData.push(month & 0xFF);
+		eaData.push(date & 0xFF);
+
+		// 計測時刻（3バイト）
+		eaData.push(hour & 0xFF);
+		eaData.push(min < 30 ? 0 : 30);
+		eaData.push(0);  // 秒は常に0
+
+		// 積算電力量（4バイト）
+		const energy = mainEL.getCumulativeEnergy(0, latestHalfHourIndex);
+		const energyValue = energy >= 0 ? Math.floor(energy * 100) : 0xFFFFFFFE;  // 0.01kWh単位
+
+		eaData.push((energyValue >> 24) & 0xFF);
+		eaData.push((energyValue >> 16) & 0xFF);
+		eaData.push((energyValue >> 8) & 0xFF);
+		eaData.push(energyValue & 0xFF);
+
+		mainEL.devState['028801']['ea'] = eaData;
+	},
+
+
 
 	//----------------------------------------------------------------
 	// エアコン
@@ -609,7 +751,7 @@ let mainEL = {
 	},
 
 	// 個別EPC
-	setLockonSub: function(rinfo, els, epc, edt) {
+	setLockSub: function(rinfo, els, epc, edt) {
 		switch (epc) { // 持ってるEPCのとき
 			// super
 			case '81':  // 設置場所, set, get, inf
@@ -638,7 +780,7 @@ let mainEL = {
 	},
 
 	// OPC複数の場合に対応
-	setLockon: async function(rinfo, els) {
+	setLock: async function(rinfo, els) {
 		let success = true;
 		let retDetails = [];
 		let ret_opc = 0;
@@ -646,7 +788,7 @@ let mainEL = {
 		for (let epc in els.DETAILs) {
 			// console.log( 'Now:', epc, mainEL.devState['026f01'][epc] );
 
-			if( await mainEL.setLockonSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+			if( await mainEL.setLockSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
 				// console.log( 'New:', epc, mainEL.devState['026f01'][epc] );
 				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
 				retDetails.push( mainEL.devState['026f01'][epc].length );
@@ -815,8 +957,16 @@ let mainEL = {
 	setSmartmeter: function(rinfo, els) {
 		for (let epc in els.DETAILs) {
 			if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
-				mainEL.devState['028801'][epc] = els.DETAILs[epc];
-				EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.GET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
+				// e5（積算履歴収集日）のセット時は特別処理
+				if (epc === 'e5') {
+					mainEL.devState['028801'][epc] = els.DETAILs[epc];
+					// 履歴データを更新
+					mainEL.updateHistoricalData();
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
+				} else {
+					mainEL.devState['028801'][epc] = els.DETAILs[epc];
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
+				}
 			} else { // 持っていないEPCのとき, SNA
 				if( els.ESV == EL.SETC ) {
 					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SETC_SNA, EL.toHexArray(epc), [0x00]);
@@ -896,7 +1046,7 @@ let mainEL = {
 		for (let epc in els.DETAILs) {
 			// console.log( 'Now:', epc, mainEL.devState['001101'][epc] );
 
-			if( await mainEL.setCurtainSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+			if( await mainEL.setThermometerSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
 				// console.log( 'New:', epc, mainEL.devState['001101'][epc] );
 				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
 				retDetails.push( mainEL.devState['001101'][epc].length );
