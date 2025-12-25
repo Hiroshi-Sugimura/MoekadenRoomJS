@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>mainEL.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="ipc.html">ipc</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Autoaircon">Autoaircon</a></li><li><a href="global.html#Closecurtain">Closecurtain</a></li><li><a href="global.html#Coolaircon">Coolaircon</a></li><li><a href="global.html#Downaircon">Downaircon</a></li><li><a href="global.html#Downtemperature">Downtemperature</a></li><li><a href="global.html#Dryaircon">Dryaircon</a></li><li><a href="global.html#ELStart">ELStart</a></li><li><a href="global.html#Heataircon">Heataircon</a></li><li><a href="global.html#Lockkey">Lockkey</a></li><li><a href="global.html#Offaircon">Offaircon</a></li><li><a href="global.html#Offlight">Offlight</a></li><li><a href="global.html#Onaircon">Onaircon</a></li><li><a href="global.html#Onlight">Onlight</a></li><li><a href="global.html#Opencurtain">Opencurtain</a></li><li><a href="global.html#Unlockkey">Unlockkey</a></li><li><a href="global.html#Upaircon">Upaircon</a></li><li><a href="global.html#Uptemperature">Uptemperature</a></li><li><a href="global.html#Windaircon">Windaircon</a></li><li><a href="global.html#aboutThis">aboutThis</a></li><li><a href="global.html#already">already</a></li><li><a href="global.html#createWindow">createWindow</a></li><li><a href="global.html#menuInitialize">menuInitialize</a></li><li><a href="global.html#on">on</a></li><li><a href="global.html#onLoad">onLoad</a></li><li><a href="global.html#sendDevState">sendDevState</a></li><li><a href="global.html#sendIPCMessage">sendIPCMessage</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">mainEL.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>//////////////////////////////////////////////////////////////////////
+//	Copyright (C) Hiroshi SUGIMURA 2022.09.05 (MIT License)
+//	Based on OWADA Shigeru 2020.12.24 (MIT License)
+//////////////////////////////////////////////////////////////////////
+'use strict'
+
+//////////////////////////////////////////////////////////////////////
+// 基本ライブラリ
+const fs   = require('fs');
+const path = require('path');
+const EL = require('echonet-lite');
+const cron = require('node-cron');
+
+// 基礎設定
+const appDir     = process.env.NODE_ENV === 'development' ? __dirname : __dirname;
+
+//////////////////////////////////////////////////////////////////////
+// ExportするObj
+let mainEL = {
+	objList: [],
+	elsocket: null,
+	recv_callback: null,
+	config: { },
+	measureTask: null,
+
+	// スマートメーター履歴データ
+	cumLog: [],  // 30分単位での積算電力量ログ
+	lastLogUpdateTime: Date.now(),
+	SMART_METER_LOG_START_DAY: 2,  // 何日前の0:00からログ取得を開始したかを示す。0なら今日。
+	MAX_CUMENERGY_PER_HALF_HOUR: 0.1,  // 30分間の最大消費電力量（kWh）
+	lastEnergyUpdate: Date.now(),
+	baseEnergy: 0,  // 基本電力消費量（for baseEnergy calculation）
+
+	devState: {
+		'001101': {  // thermometer
+			// super
+			'80': [0x30], // 動作状態, on, get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x02],  // 瞬時消費電力計測値, unsigned short
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x54, 0x68, 0x65, 0x72, 0x6d, 0x6f, 0x00, 0x00, 0x00],  // 商品コード (MoeThermo)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+			'9e': [0x01, 0x81],  // set map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			// uniq
+			'e0': [0x00, 0xdc]  // 温度計測値, get
+		},
+		'013001': {  // aircon
+			// super
+			'80': [0x31], // 動作状態, set?, get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x02],  // 瞬時消費電力計測値, unsigned short
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, ,get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x41, 0x69, 0x72, 0x63, 0x6f, 0x6e, 0x00, 0x00, 0x00],  // 商品コード (MoeAircon)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x05, 0x80, 0x81, 0x8f, 0xb0, 0xa0],  // inf map, 1 Byte目は個数, get
+			'9e': [0x06, 0x80, 0x81, 0x8f, 0xb0, 0xb3, 0xa0],  // set map, 1 Byte目は個数, get
+			'9f': [0x13, 13,  1,  1,  9,  1,  0,  0,  0,  1,  0,  1,  9,  1,  3,  3,  3], // get map, 1 Byte目は個数, 記述形式2, get
+			// uniq
+			'8f': [0x42], // 節電動作設定, set, get, inf
+			'a0': [0x41],  // 風量設定, set, get, inf
+			'b0': [0x42], // 運転モード設定, set, get, inf
+			'b3': [0x1a], // 温度設定, set, get
+			'bb': [0x14] // 室内温度計測値, get
+		},
+		'026001': {  // blind = curtain, 日よけ
+			// super
+			'80': [0x30], // 動作状態, on,  get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x03],  // 瞬時消費電力計測値, unsigned short
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x43, 0x75, 0x72, 0x74, 0x61, 0x69, 0x6e, 0x00, 0x00],  // 商品コード (MoeCurtain)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
+			'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			// uniq
+			'e0': [0x41]  // 開閉動作設定, set, get, inf
+		},
+		'026f01': {  // electnic lock
+			// super
+			'80': [0x30], // 動作状態, on, get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x01],  // 瞬時消費電力計測値, unsigned short
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x4c, 0x6f, 0x63, 0x6b, 0x00, 0x00, 0x00, 0x00, 0x00],  // 商品コード (MoeLock)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
+			'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+			// uniq
+			'e0': [0x41]  // 施錠設定１, set, get, inf
+		},
+		'028801': {  // smart meter
+			// super
+			'80': [0x30], // 動作状態, on, get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x45, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x00, 0x00, 0x00],  // 商品コード (MoeEMeter)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+			'9e': [0x02, 0x81, 0xa5],  // set map, 1 Byte目は個数, get
+			// '9f': [0x12, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xd3, 0xd7, 0xe0, 0xe1, 0xe2, 0xe5, 0xe7, 0xe8, 0xea], // get map, 1 Byte目は個数, 記述形式1はprop16まで, get
+			'9f': [0x15, 65, 65, 65, 33,  0, 64,  0, 96, 65,  0, 65,  1,  1,  3,  3,  2], // get map, 1 Byte目は個数, 記述形式2, get
+			// uniq
+			'd3': [0x00, 0x00, 0x00, 0x01],  // 係数, Get
+			'd7': [0x08],  // 積算電力量有効桁数, get
+			'e0': [0x02],  // 積算電力量計測値（正）, get
+			'e1': [0x02],  // 積算電力量単位（正）, 0x02 = 0.01kWh, get
+			'e2': [], // 積算電力量計測値履歴１（正）, get
+			'e5': [0x00], // 積算履歴収集日１, set, get
+			'e7': [0x10], // 瞬時電力計測値, get
+			'e8': [0x00, 0x10, 0x00, 0x00], // 瞬時電力計測値, get
+			'ea': []  // 定時積算電力量計測値, get
+		},
+		'029001': {  // lighting
+			// super
+			'80': [0x31], // 動作状態, set?, get, inf
+			'81': [0x0f], // 設置場所, set, get, inf
+			'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+			'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03], // identifier, initialize時に、renewNICList()できちんとセットする, get
+			'84': [0x00, 0x01],  // 瞬時消費電力計測値, unsigned short
+			'88': [0x42], // 異常状態, 0x42 = 異常無, get
+			'8a': [0x00, 0x00, 0x60],  // maker code, SonyCSL, get
+			'8b': [0x00, 0x02], // 事業場コード
+			'8c': [0x4d, 0x6f, 0x65, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x00],  // 商品コード (MoeLighting)
+			'8d': [0x34, 0x31, 0x33, 0x31, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],  // 製造番号
+			'8e': [0x07, 0xe6, 0x09, 0x01],  // 製造年月日 2022/9/1
+			'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+			'9e': [0x03, 0x80, 0x81, 0xb6],  // set map, 1 Byte目は個数, get
+			'9f': [0x0f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x88, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x9d, 0x9e, 0x9f, 0xb6], // get map, 1 Byte目は個数, get
+			// uniq
+			'b6': [0x42] // 点灯モード設定, set, get
+		}
+	},
+
+
+
+	//////////////////////////////////////////////////////////////////////
+	// 内部
+	// EL受け取った後の処理
+	/**
+	 * ECHONET Lite受信ハンドラ。受信フレームを解析して各デバイス処理へ振り分ける。
+	 * @param {object} rinfo - 送信元情報（{ address, port }など）
+	 * @param {object} els - 解析済みELフレーム（ESV, SEOJ, DEOJ, DETAILsなど）
+	 * @param {Error|null} error - 受信時のエラー。通常はnull。
+	 */
+	ELreceived: function( rinfo, els, error ) {
+		if( error ) {
+			console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() error:', error);
+			console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() rinfo:', rinfo);
+			console.error( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() els:', els);
+			throw error;
+		}
+
+		// mainEL.config.EL.debug?console.log( new Date().toFormat("YYYY-MM-DDTHH24:MI:SS"), '| mainEL.ELreceived() rinfo:', rinfo, '\nels:', els ):0;
+
+		// EL controller
+		switch( els.ESV ) {
+			case '60':  // SET_I
+			case '61':  // SET_C
+			switch( els.DEOJ.substr(0,4) ) {
+				case '0130':  // エアコン
+				mainEL.setAircon( rinfo, els );
+				break;
+
+				case '0290':  // ライト
+				mainEL.setLight( rinfo, els );
+				break;
+
+				case '0260':  // カーテン
+				mainEL.setCurtain( rinfo, els );
+				break;
+
+				case '026f':  // 鍵
+				mainEL.setLock( rinfo, els );
+				break;
+
+				case '0011':  // 温度計
+				mainEL.setThermometer( rinfo, els );
+				break;
+
+				case '0288':  // スマメ
+				mainEL.setSmartmeter( rinfo, els );
+				break;
+			}
+			break;
+
+			case '62':  // GET
+			switch( els.DEOJ.substr(0,4) ) {
+				case '0130':  // エアコン
+				mainEL.getAircon( rinfo, els );
+				break;
+
+				case '0290':  // ライト
+				mainEL.getLight( rinfo, els );
+				break;
+
+				case '0260':  // カーテン
+				mainEL.getCurtain( rinfo, els );
+				break;
+
+				case '026f':  // 鍵
+				mainEL.getLock( rinfo, els );
+				break;
+
+				case '0011':  // 温度計
+				mainEL.getThermometer( rinfo, els );
+				break;
+
+				case '0288':  // スマメ
+				mainEL.getSmartmeter( rinfo, els );
+				break;
+			}
+			break;
+		}
+
+		mainEL.recv_callback(rinfo, els, error);
+	},
+
+	//////////////////////////////////////////////////////////////////////
+	// ELの処理開始
+	/**
+	 * ECHONET Liteスタックを初期化し、測定を開始する。
+	 * @param {object} _config - 初期化用設定（EL.initializeに渡される）
+	 * @param {function} receive_cb - 受信イベント時のコールバック
+	 * @param {function} change_cb - 状態変更時のコールバック（未使用）
+	 * @returns {Promise&lt;void>} 初期化完了後にresolveされる。
+	 */
+	start: async function( _config, receive_cb, change_cb ) {
+		mainEL.config = _config;
+		mainEL.objList = ['013001', '029001', '026001', '026f01', '001101', '028801'];
+		mainEL.recv_callback = receive_cb;
+
+		// ECHONET Lite socket
+		mainEL.elsocket = await EL.initialize( mainEL.objList, mainEL.ELreceived, 0, mainEL.config);
+
+		// 各機器の識別番号をmac addressを利用したNode_profileを参照して更新
+		mainEL.devState['013001']['83'][7]  = mainEL.devState['029001']['83'][7]  = mainEL.devState['026001']['83'][7]  = mainEL.devState['026f01']['83'][7]  = mainEL.devState['001101']['83'][7]  = mainEL.devState['028801']['83'][7]  = EL.Node_details["83"][7];
+		mainEL.devState['013001']['83'][8]  = mainEL.devState['029001']['83'][8]  = mainEL.devState['026001']['83'][8]  = mainEL.devState['026f01']['83'][8]  = mainEL.devState['001101']['83'][8]  = mainEL.devState['028801']['83'][8]  = EL.Node_details["83"][8];
+		mainEL.devState['013001']['83'][9]  = mainEL.devState['029001']['83'][9]  = mainEL.devState['026001']['83'][9]  = mainEL.devState['026f01']['83'][9]  = mainEL.devState['001101']['83'][9]  = mainEL.devState['028801']['83'][9]  = EL.Node_details["83"][9];
+		mainEL.devState['013001']['83'][10] = mainEL.devState['029001']['83'][10] = mainEL.devState['026001']['83'][10] = mainEL.devState['026f01']['83'][10] = mainEL.devState['001101']['83'][10] = mainEL.devState['028801']['83'][10] = EL.Node_details["83"][10];
+		mainEL.devState['013001']['83'][11] = mainEL.devState['029001']['83'][11] = mainEL.devState['026001']['83'][11] = mainEL.devState['026f01']['83'][11] = mainEL.devState['001101']['83'][11] = mainEL.devState['028801']['83'][11] = EL.Node_details["83"][11];
+		mainEL.devState['013001']['83'][12] = mainEL.devState['029001']['83'][12] = mainEL.devState['026001']['83'][12] = mainEL.devState['026f01']['83'][12] = mainEL.devState['001101']['83'][12] = mainEL.devState['028801']['83'][12] = EL.Node_details["83"][12];
+
+		mainEL.beginMeasureElectricEnergy();
+
+	},
+
+
+	//////////////////////////////////////////////////////////////////////
+	// 各デバイスの処理開始
+
+	// 文字列0をつなげて，後ろから2文字分スライスする
+	/**
+	 * 1バイト整数を2桁の16進文字列に整形する。
+	 * @param {number} byte - 0〜255の整数
+	 * @returns {string} 2桁の16進文字列（小文字）
+	 */
+	Byte2HexString: function (byte) {
+		return (("0" + byte.toString(16)).slice(-2));
+	},
+
+	// 消費電力取得
+	/**
+	 * 指定EOJの瞬時消費電力（W）を取得する。
+	 * @param {string} eoj - ECHONET LiteクラスEOJ（例: '013001'）
+	 * @returns {number} W単位の瞬時消費電力
+	 */
+	getInstantaneousPower: function (eoj) {
+		let array = mainEL.devState[eoj]['84'];
+		let ret = array[0] * 256 + array[1];
+		return ret;
+	},
+
+	/**
+	 * 16ビットの電力値を上位/下位バイト配列に変換する。
+	 * @param {number} u16 - 0〜65535の整数（四捨五入して範囲にクランプ）
+	 * @returns {number[]} [hi, lo] の2要素配列
+	 */
+	setInstantaneousPower: function( u16 ) {
+		const val = Math.max(0, Math.min(65535, Math.round(u16)));
+		return [ (val >> 8) &amp; 0xFF, val &amp; 0xFF ];
+	},
+
+	// 瞬時電流計測値取得（R相）- A単位で返す
+	/**
+	 * R相の瞬時電流値（A）を推定する。100V系想定でW/100。
+	 * @returns {number} R相電流[A]
+	 */
+	getInstantaneousCurrentR: function () {
+		let instantaneousPowerW = 0;
+		instantaneousPowerW += mainEL.getInstantaneousPower('001101');  // 温度計
+		instantaneousPowerW += mainEL.getInstantaneousPower('013001');  // エアコン
+		instantaneousPowerW += mainEL.getInstantaneousPower('026001');  // ブラインド
+		instantaneousPowerW += mainEL.getInstantaneousPower('026f01');  // 電子錠
+		instantaneousPowerW += mainEL.getInstantaneousPower('029001');  // ライト
+		return instantaneousPowerW / 100.0;  // W→A（100V系と仮定）
+	},
+
+	// 瞬時電流計測値取得（T相）- 単相2線式なので基本的にR相と同じ
+	/**
+	 * T相の瞬時電流値（A）を返す。単相2線式想定でR相と同値。
+	 * @returns {number} T相電流[A]
+	 */
+	getInstantaneousCurrentT: function () {
+		return mainEL.getInstantaneousCurrentR();
+	},
+
+	// 4バイト整数を4バイト配列に変換（ビッグエンディアン）
+	/**
+	 * 32ビット整数をビッグエンディアンの4バイト配列へ変換する。
+	 * @param {number} inval - 32ビット整数
+	 * @returns {number[]} 4要素の配列 [b0, b1, b2, b3]
+	 */
+	setIntValueTo4Bytes: function( inval ) {
+		const outArray = [];
+		outArray[0] = (inval >> 24) &amp; 0xFF;
+		outArray[1] = (inval >> 16) &amp; 0xFF;
+		outArray[2] = (inval >> 8) &amp; 0xFF;
+		outArray[3] = inval &amp; 0xFF;
+		return outArray;
+	},
+
+	// 瞬時電流計測値の更新（EPC e8）
+	/**
+	 * スマートメーターEPC e8（瞬時電流）をR/T相2バイトずつで更新する。
+	 * 0.1A単位の整数値にスケールして下位2バイトを格納する。
+	 */
+	updateInstantaneousCurrents: function() {
+		const r = mainEL.getInstantaneousCurrentR();
+		const t = mainEL.getInstantaneousCurrentT();
+
+		// 0.1A単位で10倍する
+		const rValue = Math.floor(r * 10);
+		const tValue = Math.floor(t * 10);
+
+		// 4バイト整数に変換
+		const rBuf = mainEL.setIntValueTo4Bytes(rValue);
+		const tBuf = mainEL.setIntValueTo4Bytes(tValue);
+
+		// 下位2バイトのみを返す（R相2バイト + T相2バイト）
+		mainEL.devState['028801']['e8'] = [rBuf[2], rBuf[3], tBuf[2], tBuf[3]];
+	},
+
+	// 瞬時電力値取得（W単位）- Processing版のgetInstantaneousEnergy()に相当
+	/**
+	 * EPC e7（0.01kW単位）からWに変換して返す。
+	 * @returns {number} 瞬時電力[W]
+	 */
+	getInstantaneousEnergy: function() {
+		const e7 = mainEL.devState['028801']['e7'];
+		const instantaneousPower = (e7[0] * 256 + e7[1]);  // 0.01kW単位
+		return Math.floor(instantaneousPower * 10);  // W単位に変換
+	},
+
+	// 積算電力量単位を取得
+	/**
+	 * EPC e1の単位コードからkWhの倍率を算出する。
+	 * @returns {number} 単位倍率（例: 0.01 = 0.01kWh）
+	 */
+	getCumUnit: function() {
+		const b = mainEL.devState['028801']['e1'][0];
+		return Math.pow(10, (b &lt; 5 ? -b : b - 10));
+	},
+
+	// 消費電力のバーチャル計測
+	/**
+	 * 仮想計測ループを1秒周期で開始し、各種スマートメーター関連値を更新する。
+	 */
+	beginMeasureElectricEnergy: function () {
+		// 初期化：スマートメーター履歴データの初期化
+		mainEL.initializeSmartMeterLog();
+
+		mainEL.measureTask = cron.schedule( '* * * * * *', () => {
+			// 各機器の瞬時消費電力を更新（擬似的に状態に応じたWを付与）
+			mainEL.updateDeviceInstantaneousConsumption();
+			// 瞬時電力計測値（合算W）
+			let totalW = 0;
+			totalW += mainEL.getInstantaneousPower('001101');  // 温度計
+			totalW += mainEL.getInstantaneousPower('013001');  // エアコン
+			totalW += mainEL.getInstantaneousPower('026001');  // ブラインド
+			totalW += mainEL.getInstantaneousPower('026f01');  // 電子錠
+			totalW += mainEL.getInstantaneousPower('029001');  // ライト
+			// e7は0.01kW単位 → W/10
+			mainEL.devState['028801']['e7'] = mainEL.setInstantaneousPower(totalW / 10);
+
+			// 累積電力量を更新（秒精度）
+			mainEL.accumulateEnergyFromInstantaneous(totalW);
+
+			// 瞬時電流計測値の更新（EPC e8）
+			mainEL.updateInstantaneousCurrents();
+
+			// スマートメーター履歴データの更新
+			mainEL.updateSmartMeterLog();
+		});
+	},
+
+	// 各機器の瞬時消費電力(84)を更新
+	/**
+	 * 各デバイスの状態に応じてEPC 84（瞬時消費電力[W]）を更新する。
+	 */
+	updateDeviceInstantaneousConsumption: function() {
+		function setW(eoj, watts){
+			const w = Math.max(0, Math.round(watts));
+			mainEL.devState[eoj]['84'] = [ Math.floor(w/256), w%256 ];
+		}
+
+		// Thermometer 001101: 約2W
+		setW('001101', 2 + (Math.random()-0.5));
+
+		// Aircon 013001
+		const acOn = mainEL.devState['013001']['80'][0] === 0x30;
+		const mode = mainEL.devState['013001']['b0'][0];
+		const setT = mainEL.devState['013001']['b3'][0];
+		let acW = 0;
+		if( acOn ){
+			switch(mode){
+				case 0x42: acW = 600 + Math.random()*600; break; // cool
+				case 0x43: acW = 800 + Math.random()*700; break; // heat
+				case 0x44: acW = 300 + Math.random()*300; break; // dry
+				case 0x45: acW = 60 + Math.random()*60;  break; // wind
+				case 0x41: default: acW = 700 + Math.random()*300; break; // auto/other
+			}
+			// 温度設定による微調整（26度基準）
+			const delta = Math.max(0, Math.abs((setT||26) - 26));
+			acW *= (1 + Math.min(0.3, delta*0.02));
+		}else{
+			acW = 5 + Math.random()*5; // standby
+		}
+		setW('013001', acW);
+
+		// Curtain 026001: 約3W
+		setW('026001', 3 + (Math.random()-0.5));
+
+		// Lock 026f01: 約1〜2W
+		setW('026f01', 1 + Math.random());
+
+		// Light 029001
+		const lightOn = mainEL.devState['029001']['80'][0] === 0x30;
+		setW('029001', lightOn ? (40 + Math.random()*40) : (1 + Math.random()));
+	},
+
+	/**
+	 * 計測タスクを停止する。多重停止を避けるためガードあり。
+	 */
+	endMeasureElectricEnegy: function () {
+		if( mainEL.measureTask ) {
+			mainEL.measureTask.stop();
+			mainEL.measureTask = null;
+		}
+	},
+
+	//////////////////////////////////////////////////////////////////////
+	// スマートメーター履歴データ管理
+
+	// 履歴データの初期化
+	/**
+	 * スマートメーター累積ログ（30分単位、過去n日分）を初期化する。
+	 */
+	initializeSmartMeterLog: function() {
+		const loglen = (mainEL.SMART_METER_LOG_START_DAY + 1) * 48;  // 1日48スロット（30分間隔）
+		mainEL.cumLog = [];
+		mainEL.cumLog[0] = 0;
+		mainEL.lastEnergyUpdate = Date.now();
+
+		// ランダムな電力量ログを生成
+		for (let i = 1; i &lt; loglen; i++) {
+			mainEL.cumLog[i] = mainEL.cumLog[i - 1] + Math.random() * mainEL.MAX_CUMENERGY_PER_HALF_HOUR;
+		}
+		mainEL.lastLogUpdateTime = Date.now();
+	},
+
+	// 瞬時電力(W)を累積電力量ログに反映（1分間隔想定）
+	/**
+	 * 瞬時電力[W]から秒精度でkWhへ積算し、現在スロットへ反映する。
+	 * @param {number} instantaneousPowerW - 現在の瞬時電力[W]
+	 */
+	accumulateEnergyFromInstantaneous: function( instantaneousPowerW ) {
+		if( !mainEL.cumLog || mainEL.cumLog.length === 0 ) {
+			mainEL.initializeSmartMeterLog();
+		}
+
+		const now = Date.now();
+		const last = mainEL.lastEnergyUpdate || now;
+		const elapsedSec = Math.max(1, Math.round((now - last) / 1000)); // 少なくとも1秒として扱う
+		mainEL.lastEnergyUpdate = now;
+
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const storedDays = Math.floor(mainEL.cumLog.length / 48);
+		const currentIndex = Math.min(mainEL.cumLog.length - 1, (storedDays - 1) * 48 + latestHalfHour);
+
+		const deltaKWh = (instantaneousPowerW / 1000) * (elapsedSec / 3600); // Wh -> kWh（秒精度）
+		const base = mainEL.cumLog[currentIndex] || mainEL.cumLog[currentIndex - 1] || 0;
+		mainEL.cumLog[currentIndex] = base + deltaKWh;
+
+		// 未来スロットが現在値より小さければ揃えておく（単調増加を保証）
+		for( let i = currentIndex + 1; i &lt; mainEL.cumLog.length; i++ ) {
+			if( mainEL.cumLog[i] &lt; mainEL.cumLog[currentIndex] ) {
+				mainEL.cumLog[i] = mainEL.cumLog[currentIndex];
+			}
+		}
+	},
+
+	// 現在の30分スロットインデックスを取得
+	/**
+	 * 現在時刻に対応する30分スロット番号（0〜47）を返す。
+	 * @returns {number} スロット番号
+	 */
+	getLatestIndexHalfHour: function() {
+		const now = new Date();
+		const hour = now.getHours();
+		const min = now.getMinutes();
+		return hour * 2 + (min &lt; 30 ? 0 : 1);
+	},
+
+	// 指定された日時のスロットの積算電力量を取得
+	/**
+	 * 指定日・スロットの累積電力量[kWh]を取得する。
+	 * @param {number} day - 0=今日, 1=昨日 …
+	 * @param {number} indexHalfHour - 30分スロット番号（0〜47）
+	 * @returns {number} kWh値。未来/範囲外は-1。
+	 */
+	getCumulativeEnergy: function(day, indexHalfHour) {
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const loglen = mainEL.cumLog.length;
+
+		if (loglen === 0) {
+			mainEL.initializeSmartMeterLog();
+		}
+
+		// 未来のデータ
+		if (day === 0 &amp;&amp; indexHalfHour > latestHalfHour) {
+			return -1;
+		}
+
+		const storedDays = Math.floor(mainEL.cumLog.length / 48);
+		// ログ取得開始前
+		if (day >= storedDays) {
+			return -1;
+		}
+
+		return mainEL.cumLog[(storedDays - day - 1) * 48 + indexHalfHour];
+	},
+
+	// スマートメーター履歴データの定期更新
+	/**
+	 * 30分境界でログ拡張し、EPC e2/eAの配列を更新する。
+	 */
+	updateSmartMeterLog: function() {
+		const now = Date.now();
+		const latestHalfHour = mainEL.getLatestIndexHalfHour();
+		const prevLatestHalfHour = mainEL.prevAccessLatestHalfHour || latestHalfHour;
+
+		// 30分ごとにスロットを更新
+		if (latestHalfHour !== prevLatestHalfHour &amp;&amp; latestHalfHour === 0) {
+			// 新しい日付になった場合、ログを拡張
+			const newData = mainEL.cumLog[mainEL.cumLog.length - 1];
+			for (let i = 0; i &lt; 48; i++) {
+				mainEL.cumLog.push(newData + Math.random() * mainEL.MAX_CUMENERGY_PER_HALF_HOUR);
+			}
+		}
+
+		mainEL.prevAccessLatestHalfHour = latestHalfHour;
+
+		// e2：履歴データの更新
+		mainEL.updateHistoricalData();
+		// ea：最新の定時積算電力量の更新
+		mainEL.updateLatestFixedTimeMeasurement();
+	},
+
+	// EPC e2 履歴データの更新
+	/**
+	 * EPC e2（積算電力量計測値履歴1）を生成して更新する。
+	 */
+	updateHistoricalData: function() {
+		const day = mainEL.devState['028801']['e5'] ? mainEL.devState['028801']['e5'][0] : 0;
+		const loglen = mainEL.cumLog.length;
+		const storedDays = Math.floor(loglen / 48);
+
+		// 履歴データ配列を構築
+		const histData = [];
+		histData.push(0);  // 積算履歴収集日（上位バイト）
+		histData.push(day);  // 積算履歴収集日（下位バイト）
+
+		// 24時間48コマ分のデータ
+		for (let si = 0; si &lt; 48; si++) {
+			const energy = mainEL.getCumulativeEnergy(day, si);
+			const energyValue = energy >= 0 ? Math.floor(energy * 100) : 0xFFFFFFFE;  // 0.01kWh単位
+
+			// 4バイトのビッグエンディアン形式で格納
+			histData.push((energyValue >> 24) &amp; 0xFF);
+			histData.push((energyValue >> 16) &amp; 0xFF);
+			histData.push((energyValue >> 8) &amp; 0xFF);
+			histData.push(energyValue &amp; 0xFF);
+		}
+
+		mainEL.devState['028801']['e2'] = histData;
+	},
+
+	// EPC ea 最新の定時積算電力量の更新
+	/**
+	 * EPC ea（最新の定時積算電力量）を現在の30分インデックスで更新する。
+	 */
+	updateLatestFixedTimeMeasurement: function() {
+		const now = new Date();
+		const year = now.getFullYear();
+		const month = now.getMonth() + 1;
+		const date = now.getDate();
+		const hour = now.getHours();
+		const min = now.getMinutes();
+		const sec = now.getSeconds();
+
+		const latestHalfHourIndex = mainEL.getLatestIndexHalfHour();
+
+		// 計測年月日（4バイト）
+		const eaData = [];
+		eaData.push((year >> 8) &amp; 0xFF);
+		eaData.push(year &amp; 0xFF);
+		eaData.push(month &amp; 0xFF);
+		eaData.push(date &amp; 0xFF);
+
+		// 計測時刻（3バイト）
+		eaData.push(hour &amp; 0xFF);
+		eaData.push(min &lt; 30 ? 0 : 30);
+		eaData.push(0);  // 秒は常に0
+
+		// 積算電力量（4バイト）
+		const energy = mainEL.getCumulativeEnergy(0, latestHalfHourIndex);
+		const energyValue = energy >= 0 ? Math.floor(energy * 100) : 0xFFFFFFFE;  // 0.01kWh単位
+
+		eaData.push((energyValue >> 24) &amp; 0xFF);
+		eaData.push((energyValue >> 16) &amp; 0xFF);
+		eaData.push((energyValue >> 8) &amp; 0xFF);
+		eaData.push(energyValue &amp; 0xFF);
+
+		mainEL.devState['028801']['ea'] = eaData;
+	},
+
+
+
+	//----------------------------------------------------------------
+	// エアコン
+	/**
+	 * エアコンのGET処理で各EPC所持を確認するサブ関数。
+	 * @returns {boolean} EPCを所持していればtrue
+	 */
+	getAirconSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['013001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * エアコンのGET要求に応答する。複数EPCに対応。
+	 */
+	getAircon: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
+
+			if( await mainEL.getAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['013001'][epc].length );
+				retDetails.push( mainEL.devState['013001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.log( 'send:', arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	/**
+	 * エアコンのSET要求サブ処理。EPCごとに値を検証・更新する。
+	 * @returns {boolean} 成功時true、失敗時false
+	 */
+	setAirconSub: function(rinfo, els, epc, edt) {
+		switch (epc) { // 持ってるEPCのとき
+			// super
+			case '80':  // 動作状態, set?, get, inf
+			// console.log( 'setAirconSub case:', epc, edt);
+			if( edt == '30' || edt == '31' ) {
+				mainEL.devState['013001'][epc] = [parseInt(edt, 16)];
+				// console.log( 'setAirconSub edt:', edt, mainEL.devState['013001'][epc]);
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+			}else{
+				return false;
+			}
+			break;
+
+			case '81':  // 設置場所, set, get, inf
+			mainEL.devState['013001'][epc] = [parseInt(edt, 16)];
+			EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+			return true;
+			break;
+
+			// detail
+			case '8f': // 節電動作設定, set, get, inf
+			if( edt == '41' || edt == '42' ) {
+				mainEL.devState['013001'][epc] = [parseInt(edt, 16)];
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+			}else{
+				return false;
+			}
+			break;
+
+			case 'b0': // 運転モード設定, set, get, inf
+			switch( edt ) {
+				case '40': // その他
+				case '41': // 自動
+				case '42': // 冷房
+				case '43': // 暖房
+				case '44': // 除湿
+				case '45': // 送風
+				mainEL.devState['013001'][epc] = [parseInt(edt, 16)];
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+				break;
+
+				default:
+				return false;
+			}
+			break;
+
+			case 'b3': // 温度設定, set, get
+			let temp = parseInt( edt, 16 );
+			if( -1 &lt; temp &amp;&amp; temp &lt; 51 ) {
+				mainEL.devState['013001'][epc] = [temp];
+				return true;
+			}else{
+				return false;
+			}
+			break;
+
+			case 'a0': // 風量設定, set, get, inf
+			switch( edt ) {
+				case '31': // 0x31..0x38の8段階
+				case '32': // 0x31..0x38の8段階
+				case '33': // 0x31..0x38の8段階
+				case '34': // 0x31..0x38の8段階
+				case '35': // 0x31..0x38の8段階
+				case '36': // 0x31..0x38の8段階
+				case '37': // 0x31..0x38の8段階
+				case '38': // 0x31..0x38の8段階
+				case '41': // 自動
+				mainEL.devState['013001'][epc] = [parseInt(edt, 16)];
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+				break;
+				default:
+				// EDTがおかしい
+				return false;
+			}
+			break;
+
+			default: // 持っていないEPCやset不可能のとき, SNA
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * エアコンのSET要求に応答する。複数EPCに対応。
+	 */
+	setAircon: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
+
+			if( await mainEL.setAirconSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['013001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['013001'][epc].length );
+				retDetails.push( mainEL.devState['013001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	//----------------------------------------------------------------
+	// ライト
+	/**
+	 * ライトのGET処理サブ。EPC所持確認。
+	 */
+	getLightSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['029001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * ライトのGET要求に応答する。複数EPC対応。
+	 */
+	getLight: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['029001'][epc] );
+
+			if( await mainEL.getLightSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['029001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['029001'][epc].length );
+				retDetails.push( mainEL.devState['029001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['029001'][epc] );
+				retDetails[epc] = [0x00];
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	/**
+	 * ライトのSET要求サブ処理。EPCごとのバリデーションと更新。
+	 */
+	setLightSub: function(rinfo, els, epc, edt) {
+		switch (epc) { // 持ってるEPCのとき
+			// super
+			case '80':  // 動作状態, set, get, inf
+			// console.log( 'setLightSub case:', epc, edt);
+			if( edt == '30' || edt == '31' ) {
+				mainEL.devState['029001'][epc] = [parseInt(edt, 16)];
+				// console.log( 'setLightSub edt:', edt, mainEL.devState['029001'][epc]);
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+			}else{
+				return false;
+			}
+			break;
+			case '81':  // 設置場所, set, get, inf
+			mainEL.devState['026001'][epc] = [parseInt(edt, 16)];
+			EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+			return true;
+			break;
+
+			// detail
+			case 'b6':  // 点灯モード設定, set, get
+			switch( edt ) {
+				case '41': // 自動
+				case '42': // 通常灯
+				case '43': // 常夜灯
+				case '45': // カラー灯
+				mainEL.devState['026001'][epc] = [parseInt(edt, 16)];
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+				break;
+				default: // EDTがおかしい
+				return false;
+			}
+
+			mainEL.devState['026001'][epc] = [parseInt(edt, 16)];
+			return true;
+			break;
+
+			default: // 持っていないEPCやset不可能のとき, SNA
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * ライトのSET要求に応答する。複数EPC対応。
+	 */
+	setLight: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['029001'][epc] );
+
+			if( await mainEL.setLightSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['029001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['029001'][epc].length );
+				retDetails.push( mainEL.devState['029001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['029001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	//----------------------------------------------------------------
+	// 鍵
+	/**
+	 * 施錠デバイスのGET処理サブ。EPC所持確認。
+	 */
+	getLockSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['026f01'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * 施錠デバイスのGET要求に応答する。複数EPC対応。
+	 */
+	getLock: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026f01'][epc] );
+
+			if( await mainEL.getLockSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026f01'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026f01'][epc].length );
+				retDetails.push( mainEL.devState['026f01'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026f01'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	// 個別EPC
+	/**
+	 * 施錠デバイスのSET要求サブ処理。EPCごとの検証と更新。
+	 */
+	setLockSub: function(rinfo, els, epc, edt) {
+		switch (epc) { // 持ってるEPCのとき
+			// super
+			case '81':  // 設置場所, set, get, inf
+			mainEL.devState['026f01'][epc] = [parseInt(edt, 16)];
+			EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+			return true;
+			break;
+
+			// detail
+			case 'e0':  // 施錠状態, set, get, inf
+			// console.log( 'setLightSub case:', epc, edt);
+			if( edt == '41' || edt == '42' ) {
+				mainEL.devState['026f01'][epc] = [parseInt(edt, 16)];
+				// console.log( 'setLightSub edt:', edt, mainEL.devState['026f01'][epc]);
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+			}else{
+				return false;
+			}
+			break;
+
+
+			default: // 持っていないEPCやset不可能のとき, SNA
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * 施錠デバイスのSET要求に応答する。複数EPC対応。
+	 */
+	setLock: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026f01'][epc] );
+
+			if( await mainEL.setLockSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026f01'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026f01'][epc].length );
+				retDetails.push( mainEL.devState['026f01'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026f01'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+
+	//----------------------------------------------------------------
+	// カーテン
+	/**
+	 * カーテンのGET処理サブ。EPC所持確認。
+	 */
+	getCurtainSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['026001'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * カーテンのGET要求に応答する。複数EPC対応。
+	 */
+	getCurtain: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026001'][epc] );
+
+			if( await mainEL.getCurtainSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026001'][epc].length );
+				retDetails.push( mainEL.devState['026001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	// 個別EPC
+	/**
+	 * カーテンのSET要求サブ処理。EPCごとの検証と更新。
+	 */
+	setCurtainSub: function(rinfo, els, epc, edt) {
+		switch (epc) { // 持ってるEPCのとき
+			// super
+			case '81':  // 設置場所, set, get, inf
+			mainEL.devState['026001'][epc] = [parseInt(edt, 16)];
+			EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+			return true;
+			break;
+
+			// detail
+			case 'e0':  // 開閉動作設定, set, get, inf
+			// console.log( 'setLightSub case:', epc, edt);
+			if( edt == '41' || edt == '42' ) {
+				mainEL.devState['026001'][epc] = [parseInt(edt, 16)];
+				// console.log( 'setLightSub edt:', edt, mainEL.devState['026f01'][epc]);
+				EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+				return true;
+			}else{
+				return false;
+			}
+			break;
+
+
+			default: // 持っていないEPCやset不可能のとき, SNA
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * カーテンのSET要求に応答する。複数EPC対応。
+	 */
+	setCurtain: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['026001'][epc] );
+
+			if( await mainEL.setCurtainSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['026001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['026001'][epc].length );
+				retDetails.push( mainEL.devState['026001'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['026001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+
+	//----------------------------------------------------------------
+	// スマメ
+	/**
+	 * スマートメーターのGET処理サブ。EPC所持確認。
+	 */
+	getSmartmeterSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * スマートメーターのGET要求に応答する。複数EPC対応。
+	 */
+	getSmartmeter: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['028801'][epc] );
+
+			if( await mainEL.getSmartmeterSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['028801'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['028801'][epc].length );
+				retDetails.push( mainEL.devState['028801'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['028801'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	/**
+	 * スマートメーターのSET要求に応答。e5（履歴収集日）セット時はe2再生成。
+	 */
+	setSmartmeter: function(rinfo, els) {
+		for (let epc in els.DETAILs) {
+			if (mainEL.devState['028801'][epc]) { // 持ってるEPCのとき
+				// e5（積算履歴収集日）のセット時は特別処理
+				if (epc === 'e5') {
+					mainEL.devState['028801'][epc] = els.DETAILs[epc];
+					// 履歴データを更新
+					mainEL.updateHistoricalData();
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
+				} else {
+					mainEL.devState['028801'][epc] = els.DETAILs[epc];
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SET_RES, EL.toHexArray(epc), mainEL.devState['028801'][epc]);
+				}
+			} else { // 持っていないEPCのとき, SNA
+				if( els.ESV == EL.SETC ) {
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SETC_SNA, EL.toHexArray(epc), [0x00]);
+				}else{
+					EL.replyOPC1(rinfo.address, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), EL.SETI_SNA, EL.toHexArray(epc), [0x00]);
+				}
+			}
+		}
+	},
+
+
+	//----------------------------------------------------------------
+	// 温度計
+	/**
+	 * 温度計のGET処理サブ。EPC所持確認。
+	 */
+	getThermometerSub: function(rinfo, els, epc, edt) {
+		if (mainEL.devState['001101'][epc]) { // 持ってるEPCのとき
+			return true;
+		}else{
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * 温度計のGET要求に応答する。複数EPC対応。
+	 */
+	getThermometer: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['013001'][epc] );
+
+			if( await mainEL.getThermometerSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['001101'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['001101'][epc].length );
+				retDetails.push( mainEL.devState['001101'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['013001'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x72: 0x52;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+	// 個別EPC
+	/**
+	 * 温度計のSET要求サブ処理。EPCごとの検証と更新。
+	 */
+	setThermometerSub: function(rinfo, els, epc, edt) {
+		switch (epc) { // 持ってるEPCのとき
+			// super
+			case '81':  // 設置場所, set, get, inf
+			mainEL.devState['001101'][epc] = [parseInt(edt, 16)];
+			EL.sendOPC1( EL.EL_Multi, EL.toHexArray(els.DEOJ), [0x05, 0xff, 0x01], EL.INF, EL.toHexArray(epc), [parseInt(edt, 16)] );  // INF
+			return true;
+			break;
+
+			// detail
+
+
+			default: // 持っていないEPCやset不可能のとき, SNA
+			return false;
+		}
+	},
+
+	// OPC複数の場合に対応
+	/**
+	 * 温度計のSET要求に応答する。複数EPC対応。
+	 */
+	setThermometer: async function(rinfo, els) {
+		let success = true;
+		let retDetails = [];
+		let ret_opc = 0;
+		// console.log( 'Recv DETAILs:', els.DETAILs );
+		for (let epc in els.DETAILs) {
+			// console.log( 'Now:', epc, mainEL.devState['001101'][epc] );
+
+			if( await mainEL.setThermometerSub( rinfo, els, epc, els.DETAILs[epc] ) ) {
+				// console.log( 'New:', epc, mainEL.devState['001101'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( mainEL.devState['001101'][epc].length );
+				retDetails.push( mainEL.devState['001101'][epc] );
+				// console.log( 'retDetails:', retDetails );
+			}else{
+				// console.log( 'failed:', epc, mainEL.devState['001101'][epc] );
+				retDetails.push( parseInt(epc,16) );  // epcは文字列なので
+				retDetails.push( 0x00 );
+				success = false;
+			}
+			ret_opc += 1;
+		}
+
+		let ret_esv = success? 0x71: 0x51;  // 一つでも失敗したらSNA
+
+		let arr = [0x10, 0x81, EL.toHexArray(els.TID), EL.toHexArray(els.DEOJ), EL.toHexArray(els.SEOJ), ret_esv, ret_opc, retDetails ];
+		// console.dir( arr.flat(Infinity) ) ;
+		EL.sendArray( rinfo.address, arr.flat(Infinity) );
+	},
+
+};
+
+module.exports = {EL, mainEL};
+//////////////////////////////////////////////////////////////////////
+// EOF
+//////////////////////////////////////////////////////////////////////
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Dec 25 2025 08:02:47 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

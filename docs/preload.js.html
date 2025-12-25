@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>preload.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="ipc.html">ipc</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Autoaircon">Autoaircon</a></li><li><a href="global.html#Closecurtain">Closecurtain</a></li><li><a href="global.html#Coolaircon">Coolaircon</a></li><li><a href="global.html#Downaircon">Downaircon</a></li><li><a href="global.html#Downtemperature">Downtemperature</a></li><li><a href="global.html#Dryaircon">Dryaircon</a></li><li><a href="global.html#ELStart">ELStart</a></li><li><a href="global.html#Heataircon">Heataircon</a></li><li><a href="global.html#Lockkey">Lockkey</a></li><li><a href="global.html#Offaircon">Offaircon</a></li><li><a href="global.html#Offlight">Offlight</a></li><li><a href="global.html#Onaircon">Onaircon</a></li><li><a href="global.html#Onlight">Onlight</a></li><li><a href="global.html#Opencurtain">Opencurtain</a></li><li><a href="global.html#Unlockkey">Unlockkey</a></li><li><a href="global.html#Upaircon">Upaircon</a></li><li><a href="global.html#Uptemperature">Uptemperature</a></li><li><a href="global.html#Windaircon">Windaircon</a></li><li><a href="global.html#aboutThis">aboutThis</a></li><li><a href="global.html#already">already</a></li><li><a href="global.html#createWindow">createWindow</a></li><li><a href="global.html#menuInitialize">menuInitialize</a></li><li><a href="global.html#on">on</a></li><li><a href="global.html#onLoad">onLoad</a></li><li><a href="global.html#sendDevState">sendDevState</a></li><li><a href="global.html#sendIPCMessage">sendIPCMessage</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">preload.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>//////////////////////////////////////////////////////////////////////
+//	Copyright (C) Hiroshi SUGIMURA 2022.09.05 (MIT License)
+//	Based on OWADA Shigeru 2020.12.24 (MIT License)
+//////////////////////////////////////////////////////////////////////
+'use strict'
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+/**
+ * レンダラーに公開するIPCブリッジ。安全なチャネルでmainとやり取りする。
+ * @namespace ipc
+ */
+
+contextBridge.exposeInMainWorld('ipc', {
+	//======================================================
+	// renderer to main
+	// rendererが準備できた
+	/**
+	 * レンダラー初期化完了をmainへ通知し、初期状態を受け取る。
+	 * @returns {Promise&lt;any>} mainの'already'ハンドラ結果
+	 */
+	already: async () => {
+		return await ipcRenderer.invoke('already');
+	},
+
+	//======================================================
+	// main to renderer
+	/**
+	 * mainからのイベント購読。指定チャネルで受信したらコールバック呼び出し。
+	 * @param {string} channel - チャネル名
+	 * @param {function} callback - (channel, args) を受け取る関数
+	 */
+	on: ( channel, callback ) => {
+		console.log( 'on', channel );
+		ipcRenderer.on( channel, (event, args ) => {
+			console.log( 'ipc.on', channel, args );
+			callback( channel, args );
+		});
+	},
+
+	//======================================================
+	// renderer to main
+
+	// GUIのボタン処理
+	// 鍵
+	/** 施錠要求をmainへ送る */
+	Lockkey:() => {
+		console.log( 'Lockkey' );
+		ipcRenderer.invoke('Lockkey');
+	},
+
+	/** 解錠要求をmainへ送る */
+	Unlockkey:() => {
+		console.log( 'Unlockkey' );
+		ipcRenderer.invoke('Unlockkey');
+	},
+
+	// カーテン
+	/** カーテンを閉じる要求をmainへ送る */
+	Closecurtain:() => {
+		console.log( 'Closecurtain' );
+		ipcRenderer.invoke('Closecurtain');
+	},
+
+	/** カーテンを開く要求をmainへ送る */
+	Opencurtain:() => {
+		console.log( 'Opencurtain' );
+		ipcRenderer.invoke('Opencurtain');
+	},
+
+	// ライト
+	/** ライトを消灯する要求をmainへ送る */
+	Offlight:() => {
+		console.log( 'Offlight' );
+		ipcRenderer.invoke('Offlight');
+	},
+
+	/** ライトを点灯する要求をmainへ送る */
+	Onlight:() => {
+		console.log( 'Onlight' );
+		ipcRenderer.invoke('Onlight');
+	},
+
+	// 温度計
+	/** 温度計を+1する要求をmainへ送る */
+	Uptemperature:() => {
+		console.log( 'Uptemperature' );
+		ipcRenderer.invoke('Uptemperature');
+	},
+
+	/** 温度計を-1する要求をmainへ送る */
+	Downtemperature:() => {
+		console.log( 'Downtemperature' );
+		ipcRenderer.invoke('Downtemperature');
+	},
+
+	// エアコン上段
+	/** エアコン停止要求 */
+	Offaircon:() => {
+		console.log( 'Offaircon' );
+		ipcRenderer.invoke('Offaircon');
+	},
+
+	/** エアコン開始要求 */
+	Onaircon:() => {
+		console.log( 'Onaircon' );
+		ipcRenderer.invoke('Onaircon');
+	},
+
+	/** 設定温度を+1 */
+	Upaircon:() => {
+		console.log( 'Upaircon' );
+		ipcRenderer.invoke('Upaircon');
+	},
+
+	/** 設定温度を-1 */
+	Downaircon:() => {
+		console.log( 'Downaircon' );
+		ipcRenderer.invoke('Downaircon');
+	},
+
+
+	// エアコン下段
+	/** エアコンを自動モードにする */
+	Autoaircon:() => {
+		console.log( 'Autoaircon' );
+		ipcRenderer.invoke('Autoaircon');
+	},
+
+	/** 冷房モードにする */
+	Coolaircon:() => {
+		console.log( 'Coolaircon' );
+		ipcRenderer.invoke('Coolaircon');
+	},
+
+	/** 暖房モードにする */
+	Heataircon:() => {
+		console.log( 'Heataircon' );
+		ipcRenderer.invoke('Heataircon');
+	},
+
+	/** 除湿モードにする */
+	Dryaircon:() => {
+		console.log( 'Dryaircon' );
+		ipcRenderer.invoke('Dryaircon');
+	},
+
+	/** 送風モードにする */
+	Windaircon:() => {
+		console.log( 'Windaircon' );
+		ipcRenderer.invoke('Windaircon');
+	}
+
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Dec 25 2025 08:02:47 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
