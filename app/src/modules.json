@@ -1453,6 +1453,15 @@
     "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/cross-zip",
     "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/cross-zip/LICENSE"
   },
+  "date-utils@1.2.21": {
+    "licenses": "MIT",
+    "repository": "https://github.com/JerrySievert/date-utils",
+    "publisher": "Jerry Sievert",
+    "email": "code@legitimatesounding.com",
+    "url": "http://legitimatesounding.com/blog/",
+    "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/date-utils",
+    "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/date-utils/LICENSE"
+  },
   "debug@2.6.9": {
     "licenses": "MIT",
     "repository": "https://github.com/visionmedia/debug",
@@ -1576,6 +1585,13 @@
     "publisher": "Masaki Komagata",
     "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/eastasianwidth",
     "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/eastasianwidth/README.md"
+  },
+  "echonet-lite@2.18.1": {
+    "licenses": "MIT",
+    "repository": "https://github.com/Hiroshi-Sugimura/echonet-lite.js",
+    "publisher": "Hiroshi SUGIMURA",
+    "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/echonet-lite",
+    "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/echonet-lite/LICENSE"
   },
   "electron-installer-common@0.10.4": {
     "licenses": "Apache-2.0",
@@ -3033,6 +3049,13 @@
     "email": "tim@timfish.uk",
     "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/node-api-version",
     "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/node-api-version/README.md"
+  },
+  "node-cron@4.2.1": {
+    "licenses": "ISC",
+    "repository": "https://github.com/merencia/node-cron",
+    "publisher": "Lucas Merencia",
+    "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/node-cron",
+    "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/node-cron/LICENSE.md"
   },
   "node-fetch@2.7.0": {
     "licenses": "MIT",
