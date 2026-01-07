@@ -10,7 +10,7 @@
   <Properties>
     <DisplayName>MoekadenRoomJS</DisplayName>
     <PublisherDisplayName>SUGIMURA Hiroshi (Kanagawa Institute of Technology)</PublisherDisplayName>
-    <Description>Platform for Life Improvement and Support</Description>
+    <Description>MoekadenRoom (The JavaScript version)</Description>
     <Logo>assets\SampleAppx.50x50.png</Logo>
   </Properties>
   <Resources>
@@ -29,7 +29,7 @@
        DisplayName="MoekadenRoomJS"
        Square150x150Logo="assets\icon.150x150.png"
        Square44x44Logo="assets\icon.44x44.png"
-       Description="Platform for Life Improvement and Support">
+       Description="MoekadenRoom (The JavaScript version)">
         <uap:DefaultTile Wide310x150Logo="assets\icon.310x150.png" />
       </uap:VisualElements>
     </Application>
