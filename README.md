@@ -54,7 +54,7 @@ npm start
 - **macOS**: DMG + ZIP形式
 - **Linux**: DEB + RPM形式
 
-**ダウンロード**: [Releases](https://github.com/Hirosh1912/MoekadenRoomJS/releases)
+**ダウンロード**: [Releases](https://github.com/Hiroshi-Sugimura/MoekadenRoomJS/releases/)
 
 ## 使い方
 
