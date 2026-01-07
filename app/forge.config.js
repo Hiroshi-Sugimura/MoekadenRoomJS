@@ -1,3 +1,5 @@
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
+
 export default {
   packagerConfig: {
     name: "MoekadenRoomJS",
@@ -38,7 +40,8 @@ export default {
     {
       name: "@electron-forge/maker-appx",
       config: {
-        identityName: "CN=MoekadenRoomJS"
+        publisher: "CN=SUGIMURA Hiroshi (Kanagawa Institute of Technology)",
+        identityName: "HiroshiSUGIMURA.MoekadenRoomJS"
       }
     }
   ],
@@ -46,6 +49,20 @@ export default {
     {
       name: "@electron-forge/plugin-auto-unpack-natives",
       config: {}
+    },
+    {
+      name: "@electron-forge/plugin-fuses",
+      config: {
+        version: FuseVersion.V1,
+        resetAdjacentUnusedFuses: true,
+        [FuseV1Options.RunAsNode]: false,
+        [FuseV1Options.EnableCookieEncryption]: true,
+        [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+        [FuseV1Options.EnableNodeCliInspectArguments]: false,
+        [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+        [FuseV1Options.OnlyLoadAppFromAsar]: true,
+        [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false
+      }
     }
   ],
   publishers: [

@@ -5,11 +5,11 @@
    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
   <Identity Name="HiroshiSUGIMURA.MoekadenRoomJS"
     ProcessorArchitecture="x64"
-    Publisher="CN=MoekadenRoomJS"
+    Publisher="CN=SUGIMURA Hiroshi (Kanagawa Institute of Technology)"
     Version="1.4.0.0" />
   <Properties>
     <DisplayName>MoekadenRoomJS</DisplayName>
-    <PublisherDisplayName>神奈川工科大学</PublisherDisplayName>
+    <PublisherDisplayName>SUGIMURA Hiroshi (Kanagawa Institute of Technology)</PublisherDisplayName>
     <Description>Platform for Life Improvement and Support</Description>
     <Logo>assets\SampleAppx.50x50.png</Logo>
   </Properties>
