@@ -1,7 +1,7 @@
 # MoekadenRoomJS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.3.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.0-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
 **MoekadenRoomJS** は、ECHONET Lite対応スマートホーム機器のエミュレータです。開発やテストに最適なツールで、実機がなくてもECHONET Lite対応アプリケーションの動作確認ができます。
@@ -32,27 +32,29 @@
 
 ### 必要な環境
 
-- Node.js 14以上
-- npm 6以上
+
 
 ### セットアップ
 
-```bash
 # リポジトリをクローン
-git clone https://github.com/Hiroshi-Sugimura/MoekadenRoomJS.git
-cd MoekadenRoomJS/v1
+git clone https://github.com/Hirosh1912/MoekadenRoomJS.git
+cd MoekadenRoomJS/app
 
 # 依存パッケージをインストール
 npm install
-
 # アプリケーションを起動
 npm start
 ```
 
-### バイナリ版
+### バイナリ版（v1.4.0以降）
 
-開発環境の構築が不要な実行可能ファイル版も配布しています：
-- **ダウンロード**: https://www.sugi-lab.net/
+開発環境の構築が不要な実行可能ファイル版を配布しています。electron-forgeによるネイティブパッケージング対応：
+
+- **Windows**: Squirrel + AppX形式
+- **macOS**: DMG + ZIP形式
+- **Linux**: DEB + RPM形式
+
+**ダウンロード**: [Releases](https://github.com/Hirosh1912/MoekadenRoomJS/releases)
 
 ## 使い方
 
@@ -64,14 +66,17 @@ npm start
 
 ### ビルド
 
-実行可能ファイルを作成する場合：
+実行可能ファイルを作成する場合（v1.4.0以降）：
 
 ```bash
-cd v1
+cd app
 npm run make
 ```
 
-ビルド成果物は `v1/out/` ディレクトリに生成されます。
+ビルド成果物は `app/out/make/` ディレクトリに生成されます：
+- `squirrel.windows/x64/`: Windows インストーラー
+- `appx/x64/`: Windows AppXパッケージ
+- その他：macOS、Linux対応ファイル
 
 
 ## API・開発者向け情報
@@ -80,25 +85,33 @@ npm run make
 
 ```
 MoekadenRoomJS/
-├── v1/                  # メインアプリケーション
-│   ├── main.js         # Electronメインプロセス
-│   ├── mainEL.js       # ECHONET Lite制御ロジック
-│   ├── preload.js      # プリロードスクリプト
-│   ├── public/         # レンダラープロセス（UI）
-│   │   ├── index.htm
-│   │   ├── js/
-│   │   └── css/
+├── app/                # v1.4.0以降のメインアプリケーション
+│   ├── src/
+│   │   ├── main.js           # Electronメインプロセス
+│   │   ├── mainEL.js         # ECHONET Lite制御ロジック
+│   │   ├── preload.js        # プリロードスクリプト
+│   │   ├── public/           # レンダラープロセス（UI）
+│   │   │   ├── index.htm
+│   │   │   ├── js/
+│   │   │   └── css/
+│   │   └── icons/            # アプリケーションアイコン
+│   ├── appx/                 # Windows AppXマニフェスト
+│   ├── forge.config.js       # electron-forge設定
 │   └── package.json
-├── docs/               # 自動生成されたJSDoc
+├── docs/               # JSDoc自動生成ドキュメント
+├── .github/workflows/  # GitHub Actions
 └── README.md
 ```
 
 ### 主要な依存パッケージ
 
-- **electron**: デスクトップアプリケーションフレームワーク
+- **electron**: v39.2.6 - デスクトップアプリケーションフレームワーク
+- **@electron-forge**: v7.10.2 - バイナリパッケージング
 - **echonet-lite**: ECHONET Lite通信ライブラリ
 - **node-cron**: 定期実行タスク管理
 - **date-utils**: 日付・時刻処理
+
+**ライセンス情報**: `npm run license-check` で `src/modules.json` に出力
 
 ### ECHONET Liteについて
 
@@ -109,47 +122,64 @@ ECHONET Lite（エコーネットライト）は、家庭やビル内のスマ�
 - [echonet-lite.js ライブラリ](https://github.com/Hiroshi-Sugimura/echonet-lite.js)
 
 
-## Manual
+## ドキュメント
 
-https://hiroshi-sugimura.github.io/MoekadenRoomJS/
+### JSDoc API ドキュメント
 
+自動生成されたAPIドキュメント：
+**👉 [https://hiroshi-sugimura.github.io/MoekadenRoomJS/](https://hiroshi-sugimura.github.io/MoekadenRoomJS/)**
 
-## Binary
+- **更新タイミング**: main/masterへのpushで自動生成（GitHub Actions）
+- **テンプレート**: Docdash
+- **対象**: `app/src/` 配下のJavaScript
+- **ワークフロー**: [.github/workflows/generate-jsdoc.yml](.github/workflows/generate-jsdoc.yml)
 
-- Win, Mac: https://www.sugi-lab.net/
+#### ローカル生成
 
+```bash
+npm install -g jsdoc docdash
+cd app
+jsdoc -r src -d ../docs -R ../README.md
+```
 
-## Documentation
+### バイナリ配布
 
-- JSDoc: main/masterへのpush時にGitHub Actionsで自動生成されるよ（テンプレはDocdash）。
-- 出力先: リポジトリ直下の`docs/`。`v1`配下のJavaScriptを再帰で対象にしてる。
-- ワークフロー: [.github/workflows/generate-jsdoc.yml](.github/workflows/generate-jsdoc.yml)
-- ローカルで試すなら（任意）:
-	- `npm install -g jsdoc`
-	- `npm install -g docdash`
-	- `jsdoc -r v1 -d docs -R README.md -t $(npm root -g)/docdash`
+- **MacOS**: [Releases](https://github.com/Hiroshi-Sugimura?tab=packages&repo_name=MoekadenRoomJS)
 
 
 ## トラブルシューティング
 
 ### npm installでGitが必要というエラーが出る
 
-package-lock.jsonを削除してから再度インストールしてください：
+package-lock.jsonを削除してから再度インストール：
 
 ```bash
-cd v1
+cd app
 rm package-lock.json
 npm install
 ```
 
 ### アプリが起動しない
 
-1. Node.jsのバージョンを確認してください（v14以上が必要）
+1. Node.jsのバージョンを確認（v22以上が必要）
 2. `node_modules`を削除して再インストール：
    ```bash
+   cd app
    rm -rf node_modules
    npm install
+   npm start
    ```
+
+### ライセンス情報の確認
+
+各ライブラリのライセンスを確認：
+
+```bash
+cd app
+npm run license-check
+```
+
+出力ファイル: `app/src/modules.json`
 
 ### ネットワーク上で機器が見つからない
 
@@ -368,7 +398,7 @@ Copyright (c) Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)
 
 using LicenseChecker.js
 
-本プロジェクトは多くのオープンソースライブラリに依存しています。各ライブラリのライセンスについては、[v1/README.md.backup](v1/README.md.backup) のバックアップファイルを参照してください。
+本プロジェクトは多くのオープンソースライブラリに依存しています。各ライブラリのライセンスについては、[Modules.json](app/src/modules.json) のバックアップファイルを参照してください。
 
 主要な依存ライブラリ：
 - Electron (MIT License)
@@ -378,6 +408,14 @@ using LicenseChecker.js
 
 
 ## 変更履歴
+
+### v1.4.0 (2026)
+- 🔄 Electron 39 + electron-forge 7.10 で再パッケージ（Squirrel, AppX, DMG, DEB, RPM）
+- 🪪 AppX Publisher/Identity 修正と署名付きビルド整備
+- 🔒 fuses 導入でセキュリティ強化（ContextIsolation など）
+- 📁 プロジェクトを `app/` 配下へ整理し、JSDoc 対象を `app/src` に更新
+- 📚 公開ドキュメント: https://hiroshi-sugimura.github.io/MoekadenRoomJS/
+- 📜 ライセンス出力: `npm run license-check` → `app/src/modules.json`
 
 ### v1.3.0 (2024)
 - ✨ 消費電力計測機能対応
