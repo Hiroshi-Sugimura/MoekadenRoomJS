@@ -3,3 +3,4 @@ v1/node_modules/
 v1/package-lock.json
 app/node_modules/
 app/src/node_modules/
+app/out/
