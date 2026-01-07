@@ -61,15 +61,133 @@
 
     <section class="readme usertext">
         <article><h1>MoekadenRoomJS</h1>
-<p>もともと https://github.com/SonyCSL/MoekadenRoom (SonyCSL)のProcessing、Java版があり、そのElectron、JavaScript版になります。
-ソースコードはスクラッチから作っていますので、互換性があるように作っていますが、ところどころ挙動は異なります。</p>
-<h1>manual</h1>
+<p><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+<img src="https://img.shields.io/badge/version-1.3.0-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform"></p>
+<p><strong>MoekadenRoomJS</strong> は、ECHONET Lite対応スマートホーム機器のエミュレータです。開発やテストに最適なツールで、実機がなくてもECHONET Lite対応アプリケーションの動作確認ができます。</p>
+<p>もともと <a href="https://github.com/SonyCSL/MoekadenRoom">SonyCSL/MoekadenRoom</a> のProcessing・Java版があり、本プロジェクトはそのElectron・JavaScript版実装です。ソースコードはスクラッチから作成しているため、互換性を保ちつつも一部挙動が異なる場合があります。</p>
+<h2>特徴</h2>
+<ul>
+<li>🏠 <strong>複数機器のシミュレーション</strong>: エアコン、照明、スマートメーター、温度計、カーテン、電子錠に対応</li>
+<li>🔌 <strong>ECHONET Lite準拠</strong>: Appendix P, Rev.1 対応</li>
+<li>💻 <strong>クロスプラットフォーム</strong>: Windows、macOS、Linuxで動作</li>
+<li>🎮 <strong>GUI操作</strong>: 直感的なUIで機器の状態を変更可能</li>
+<li>📊 <strong>電力計測機能</strong>: スマートメーターの電力消費データをシミュレーション</li>
+<li>🌐 <strong>ネットワーク対応</strong>: UDP/IPv4、IPv6に対応</li>
+</ul>
+<h2>対応機器</h2>
+<table>
+<thead>
+<tr>
+<th>機器</th>
+<th>ECHONET Class</th>
+<th>主な機能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>エアコン</td>
+<td>0x013001</td>
+<td>電源ON/OFF、運転モード、温度設定、風量設定</td>
+</tr>
+<tr>
+<td>照明</td>
+<td>0x029001</td>
+<td>電源ON/OFF、点灯モード設定</td>
+</tr>
+<tr>
+<td>スマートメーター</td>
+<td>0x028801</td>
+<td>積算電力量、瞬時電力、履歴データ</td>
+</tr>
+<tr>
+<td>温度計</td>
+<td>0x001101</td>
+<td>温度計測値</td>
+</tr>
+<tr>
+<td>カーテン</td>
+<td>0x026001</td>
+<td>開閉動作設定</td>
+</tr>
+<tr>
+<td>電子錠</td>
+<td>0x026f01</td>
+<td>施錠/解錠</td>
+</tr>
+</tbody>
+</table>
+<h2>インストール</h2>
+<h3>必要な環境</h3>
+<ul>
+<li>Node.js 14以上</li>
+<li>npm 6以上</li>
+</ul>
+<h3>セットアップ</h3>
+<pre class="prettyprint source lang-bash"><code># リポジトリをクローン
+git clone https://github.com/Hiroshi-Sugimura/MoekadenRoomJS.git
+cd MoekadenRoomJS/v1
+
+# 依存パッケージをインストール
+npm install
+
+# アプリケーションを起動
+npm start
+</code></pre>
+<h3>バイナリ版</h3>
+<p>開発環境の構築が不要な実行可能ファイル版も配布しています：</p>
+<ul>
+<li><strong>ダウンロード</strong>: https://www.sugi-lab.net/</li>
+</ul>
+<h2>使い方</h2>
+<h3>基本操作</h3>
+<ol>
+<li>アプリケーションを起動すると、メインウィンドウに仮想的な部屋が表示されます</li>
+<li>各機器をクリックして状態を変更できます</li>
+<li>ECHONET Lite対応アプリケーションから、同一ネットワーク上のデバイスとして認識されます</li>
+</ol>
+<h3>ビルド</h3>
+<p>実行可能ファイルを作成する場合：</p>
+<pre class="prettyprint source lang-bash"><code>cd v1
+npm run make
+</code></pre>
+<p>ビルド成果物は <code>v1/out/</code> ディレクトリに生成されます。</p>
+<h2>API・開発者向け情報</h2>
+<h3>プロジェクト構成</h3>
+<pre class="prettyprint source"><code>MoekadenRoomJS/
+├── v1/                  # メインアプリケーション
+│   ├── main.js         # Electronメインプロセス
+│   ├── mainEL.js       # ECHONET Lite制御ロジック
+│   ├── preload.js      # プリロードスクリプト
+│   ├── public/         # レンダラープロセス（UI）
+│   │   ├── index.htm
+│   │   ├── js/
+│   │   └── css/
+│   └── package.json
+├── docs/               # 自動生成されたJSDoc
+└── README.md
+</code></pre>
+<h3>主要な依存パッケージ</h3>
+<ul>
+<li><strong>electron</strong>: デスクトップアプリケーションフレームワーク</li>
+<li><strong>echonet-lite</strong>: ECHONET Lite通信ライブラリ</li>
+<li><strong>node-cron</strong>: 定期実行タスク管理</li>
+<li><strong>date-utils</strong>: 日付・時刻処理</li>
+</ul>
+<h3>ECHONET Liteについて</h3>
+<p>ECHONET Lite（エコーネットライト）は、家庭やビル内のスマート機器を制御・監視するための通信プロトコルです。日本のスマートホーム・HEMS（Home Energy Management System）で広く採用されています。</p>
+<p><strong>参考リンク</strong>:</p>
+<ul>
+<li><a href="https://echonet.jp/spec_g/">ECHONET Lite規格書</a></li>
+<li><a href="https://github.com/Hiroshi-Sugimura/echonet-lite.js">echonet-lite.js ライブラリ</a></li>
+</ul>
+<h2>Manual</h2>
 <p>https://hiroshi-sugimura.github.io/MoekadenRoomJS/</p>
-<h1>Binary</h1>
+<h2>Binary</h2>
 <ul>
 <li>Win, Mac: https://www.sugi-lab.net/</li>
 </ul>
-<h1>Documentation</h1>
+<h2>Documentation</h2>
 <ul>
 <li>JSDoc: main/masterへのpush時にGitHub Actionsで自動生成されるよ（テンプレはDocdash）。</li>
 <li>出力先: リポジトリ直下の<code>docs/</code>。<code>v1</code>配下のJavaScriptを再帰で対象にしてる。</li>
@@ -81,6 +199,337 @@
 <li><code>jsdoc -r v1 -d docs -R README.md -t $(npm root -g)/docdash</code></li>
 </ul>
 </li>
+</ul>
+<h2>トラブルシューティング</h2>
+<h3>npm installでGitが必要というエラーが出る</h3>
+<p>package-lock.jsonを削除してから再度インストールしてください：</p>
+<pre class="prettyprint source lang-bash"><code>cd v1
+rm package-lock.json
+npm install
+</code></pre>
+<h3>アプリが起動しない</h3>
+<ol>
+<li>Node.jsのバージョンを確認してください（v14以上が必要）</li>
+<li><code>node_modules</code>を削除して再インストール：<pre class="prettyprint source lang-bash"><code>rm -rf node_modules
+npm install
+</code></pre>
+</li>
+</ol>
+<h3>ネットワーク上で機器が見つからない</h3>
+<ul>
+<li>ファイアウォール設定でUDP通信が許可されているか確認してください</li>
+<li>同一ネットワークセグメントに接続されているか確認してください</li>
+<li>アプリケーションの設定でIPv4/IPv6の設定を確認してください</li>
+</ul>
+<h2>貢献</h2>
+<p>プルリクエスト、Issue報告を歓迎します！</p>
+<ol>
+<li>このリポジトリをフォーク</li>
+<li>Feature ブランチを作成 (<code>git checkout -b feature/amazing-feature</code>)</li>
+<li>変更をコミット (<code>git commit -m 'Add some amazing feature'</code>)</li>
+<li>ブランチにプッシュ (<code>git push origin feature/amazing-feature</code>)</li>
+<li>プルリクエストを作成</li>
+</ol>
+<h2>ライセンス</h2>
+<p>MIT License</p>
+<p>Copyright (c) Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)</p>
+<p>詳細は <a href="LICENSE">LICENSE</a> ファイルを参照してください。</p>
+<h2>謝辞</h2>
+<ul>
+<li>オリジナルの <a href="https://github.com/SonyCSL/MoekadenRoom">MoekadenRoom</a> (SonyCSL) に感謝します</li>
+<li>ECHONET Liteプロトコルの開発者およびコミュニティに感謝します</li>
+</ul>
+<h2>関連リンク</h2>
+<ul>
+<li><a href="https://hiroshi-sugimura.github.io/MoekadenRoomJS/">公式マニュアル</a></li>
+<li><a href="https://hiroshi-sugimura.github.io/MoekadenRoomJS/docs/">JSDoc API ドキュメント</a></li>
+<li><a href="https://echonet.jp/">ECHONET Lite公式サイト</a></li>
+<li><a href="https://github.com/Hiroshi-Sugimura/echonet-lite.js">echonet-lite.js ライブラリ</a></li>
+</ul>
+<h2>お問い合わせ</h2>
+<ul>
+<li><strong>Author</strong>: Hiroshi SUGIMURA</li>
+<li><strong>Email</strong>: hiroshi.sugimura@gmail.com</li>
+<li><strong>Institution</strong>: Kanagawa Institute of Technology, JAPAN</li>
+</ul>
+<hr>
+<h2>対応オブジェクトとEPCおよびデフォルト値</h2>
+<p>以下は、本エミュレータが対応するECHONET Liteオブジェクトの詳細仕様です。</p>
+<h3>node profile</h3>
+<pre class="prettyprint source lang-json"><code>'0ef001': {
+	// super
+	&quot;88&quot;: [0x42], // Fault status, get
+	&quot;8a&quot;: [0x00, 0x00, 0x77], // maker code, manufacturer code, kait = 00 00 77, get
+	&quot;8b&quot;: [0x00, 0x00, 0x02], // business facility code, homeele = 00 00 02, get
+	&quot;9d&quot;: [0x02, 0x80, 0xd5], // inf map, 1 Byte目は個数, get
+	&quot;9e&quot;: [0x00],             // set map, 1 Byte目は個数, get
+	&quot;9f&quot;: [0x0e, 0x80, 0x82, 0x83, 0x88, 0x8a, 0x8b, 0x9d, 0x9e, 0x9f, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7], // get map, 1 Byte目は個数, get
+	// detail
+	&quot;80&quot;: [0x30], // 動作状態, get, inf
+	&quot;82&quot;: [0x01, 0x0d, 0x01, 0x00], // EL version, 1.13, get
+	&quot;83&quot;: [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	&quot;d3&quot;: [0x00, 0x00, 0x01],  // 自ノードで保持するインスタンスリストの総数（ノードプロファイル含まない）, initialize時にuser項目から自動計算, get
+	&quot;d4&quot;: [0x00, 0x02],        // 自ノードクラス数（ノードプロファイル含む）, initialize時にuser項目から自動計算, get
+	&quot;d5&quot;: [],    // インスタンスリスト通知, 1Byte目はインスタンス数, initialize時にuser項目から自動計算, anno
+	&quot;d6&quot;: [],    // 自ノードインスタンスリストS, initialize時にuser項目から自動計算, get
+	&quot;d7&quot;: []     // 自ノードクラスリストS, initialize時にuser項目から自動計算, get
+}
+</code></pre>
+<h3>device object</h3>
+<pre class="prettyprint source lang-json"><code>'001101': {  // thermometer
+	// super
+	'80': [0x30], // 動作状態, on, get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, get
+	'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+	'9e': [0x01, 0x81],  // set map, 1 Byte目は個数, get
+	'9f': [0x0a, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+	// detail
+	'e0': [0x00, 0xdc]  // 温度計測値, get
+},
+'013001': {  // aircon
+	// super
+	'80': [0x31], // 動作状態, set?, get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, ,get
+	'9d': [0x05, 0x80, 0x81, 0x8f, 0xb0, 0xa0],  // inf map, 1 Byte目は個数, get
+	'9e': [0x06, 0x80, 0x81, 0x8f, 0xb0, 0xb3, 0xa0],  // set map, 1 Byte目は個数, get
+	'9f': [0x0d, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x8f, 0x9d, 0x9e, 0x9f, 0xb0, 0xb3, 0xbb], // get map, 1 Byte目は個数, get
+	// detail
+	'8f': [0x42], // 節電動作設定, set, get, inf
+	'b0': [0x42], // 運転モード設定, set, get, inf
+	'b3': [0x1a], // 温度設定, set, get
+	'bb': [0x14], // 室内温度計測値, get
+	'a0': [0x41]  // 風量設定, set, get, inf
+},
+'026001': {  // blind = curtain, 日よけ
+	// super
+	'80': [0x30], // 動作状態, on,  get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, get
+	'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
+	'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
+	'9f': [0x0a, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+	// detail
+	'e0': [0x41]  // 開閉動作設定, set, get, inf
+},
+'026f01': {  // electnic lock
+	// super
+	'80': [0x30], // 動作状態, on, get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, get
+	'9d': [0x03, 0x80, 0x81, 0xe0],  // inf map, 1 Byte目は個数, get
+	'9e': [0x02, 0x81, 0xe0],  // set map, 1 Byte目は個数, get
+	'9f': [0x0a, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xe0], // get map, 1 Byte目は個数, get
+	// detail
+	'e0': [0x41]  // 施錠設定１, set, get, inf
+},
+'028801': {  // smart meter
+	// super
+	'80': [0x30], // 動作状態, on, get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, get
+	'9d': [0x02, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+	'9e': [0x02, 0x81, 0xa5],  // set map, 1 Byte目は個数, get
+	'9f': [0x12, 65, 65, 65, 33, 0, 64, 0, 96, 65, 0, 65, 0, 0, 0, 2, 2, 2], // get map, 1 Byte目は個数, 記述形式2, get
+	// detail
+	'd3': [0x00, 0x00, 0x00, 0x01],  // 係数, Get
+	'd7': [0x08],  // 積算電力量有効桁数, get
+	'e0': [0x02],  // 積算電力量計測値（正）, get
+	'e1': [0x02],  // 積算電力量単位（正）, 0x02 = 0x01kWh, get
+	'e2': [], // 積算電力量計測値履歴１（正）, get
+	'e5': [0x00], // 積算履歴収集日１, set, get
+	'e7': [0x10], // 瞬時電力計測値, get
+	'e8': [0x00, 0x10, 0x00, 0x00], // 瞬時電力計測値, get
+	'ea': []  // 定時積算電力量計測値, get
+},
+'029001': {  // lighting
+	// super
+	'80': [0x31], // 動作状態, set?, get, inf
+	'81': [0x0f], // 設置場所, set, get, inf
+	'82': [0x00, 0x00, 0x50, 0x01],  // spec version, P. rev1, get
+	'83': [0xfe, 0x00, 0x00, 0x77, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03], // identifier, initialize時に、renewNICList()できちんとセットする, get
+	'88': [0x42], // 異常状態, 0x42 = 異常無, get
+	'8a': [0x00, 0x00, 0x77],  // maker code, kait, get
+	'9d': [0x04, 0x80, 0x81],  // inf map, 1 Byte目は個数, get
+	'9e': [0x04, 0x80, 0x81, 0xb6],  // set map, 1 Byte目は個数, get
+	'9f': [0x0a, 0x80, 0x81, 0x82, 0x83, 0x88, 0x8a, 0x9d, 0x9e, 0x9f, 0xb6], // get map, 1 Byte目は個数, get
+	// uniq
+	'b6': [0x42] // 点灯モード設定, set, get
+}
+</code></pre>
+<h2>サポートされるEPCプロパティの説明</h2>
+<h3>共通プロパティ（全機器）</h3>
+<table>
+<thead>
+<tr>
+<th>EPC</th>
+<th>プロパティ名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x80</td>
+<td>動作状態</td>
+<td>ON(0x30) / OFF(0x31)</td>
+</tr>
+<tr>
+<td>0x81</td>
+<td>設置場所</td>
+<td>機器の設置場所コード</td>
+</tr>
+<tr>
+<td>0x82</td>
+<td>規格Version情報</td>
+<td>ECHONET Lite規格のバージョン</td>
+</tr>
+<tr>
+<td>0x83</td>
+<td>識別番号</td>
+<td>機器固有の識別番号</td>
+</tr>
+<tr>
+<td>0x88</td>
+<td>異常発生状態</td>
+<td>異常あり(0x41) / 異常なし(0x42)</td>
+</tr>
+<tr>
+<td>0x8a</td>
+<td>メーカーコード</td>
+<td>製造メーカー識別コード（本エミュは0x000077 = KAIT）</td>
+</tr>
+</tbody>
+</table>
+<h3>エアコン固有プロパティ (0x013001)</h3>
+<table>
+<thead>
+<tr>
+<th>EPC</th>
+<th>プロパティ名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x8f</td>
+<td>節電動作設定</td>
+<td>節電動作中(0x41) / 通常動作(0x42)</td>
+</tr>
+<tr>
+<td>0xb0</td>
+<td>運転モード設定</td>
+<td>自動(0x41)、冷房(0x42)、暖房(0x43)、除湿(0x44)、送風(0x45)</td>
+</tr>
+<tr>
+<td>0xb3</td>
+<td>温度設定値</td>
+<td>設定温度（℃）</td>
+</tr>
+<tr>
+<td>0xbb</td>
+<td>室内温度計測値</td>
+<td>現在の室温（℃）</td>
+</tr>
+<tr>
+<td>0xa0</td>
+<td>風量設定</td>
+<td>自動(0x41)～8段階(0x31-0x38)</td>
+</tr>
+</tbody>
+</table>
+<h3>スマートメーター固有プロパティ (0x028801)</h3>
+<table>
+<thead>
+<tr>
+<th>EPC</th>
+<th>プロパティ名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0xd3</td>
+<td>係数</td>
+<td>積算電力量の係数</td>
+</tr>
+<tr>
+<td>0xd7</td>
+<td>積算電力量有効桁数</td>
+<td>有効桁数</td>
+</tr>
+<tr>
+<td>0xe0</td>
+<td>積算電力量計測値（正方向）</td>
+<td>累積使用電力量</td>
+</tr>
+<tr>
+<td>0xe1</td>
+<td>積算電力量単位</td>
+<td>単位（0.1kWh、1kWh等）</td>
+</tr>
+<tr>
+<td>0xe7</td>
+<td>瞬時電力計測値</td>
+<td>現在の消費電力（W）</td>
+</tr>
+<tr>
+<td>0xea</td>
+<td>定時積算電力量計測値</td>
+<td>定時の積算電力量</td>
+</tr>
+</tbody>
+</table>
+<h2>Module licenses</h2>
+<p>using LicenseChecker.js</p>
+<p>本プロジェクトは多くのオープンソースライブラリに依存しています。各ライブラリのライセンスについては、<a href="v1/README.md.backup">v1/README.md.backup</a> のバックアップファイルを参照してください。</p>
+<p>主要な依存ライブラリ：</p>
+<ul>
+<li>Electron (MIT License)</li>
+<li>echonet-lite.js (MIT License)</li>
+<li>node-cron (ISC License)</li>
+<li>その他多数（詳細はバックアップファイル参照）</li>
+</ul>
+<h2>変更履歴</h2>
+<h3>v1.3.0 (2024)</h3>
+<ul>
+<li>✨ 消費電力計測機能対応</li>
+<li>📊 スマートメーターの電力履歴データ保存機能追加</li>
+<li>🐛 バグ修正とパフォーマンス改善</li>
+</ul>
+<h3>v1.2.0 (2024)</h3>
+<ul>
+<li>✨ 複数のSet、Getプロパティに対応</li>
+<li>🔧 ECHONET Lite通信の安定性向上</li>
+<li>📝 ドキュメント改善</li>
+</ul>
+<h3>v1.1.0 (2023)</h3>
+<ul>
+<li>✨ ECHONET Lite Appendix P, Rev.1 対応</li>
+<li>🎮 EPCプロパティの追加実装</li>
+<li>🌐 IPv6対応強化</li>
+</ul>
+<h3>v1.0.0 (2022)</h3>
+<ul>
+<li>🎉 初回リリース</li>
+<li>🏠 基本的な6種類の機器エミュレーション実装</li>
+<li>💻 Electron GUI実装</li>
+<li>🔌 ECHONET Lite基本機能実装</li>
 </ul></article>
     </section>
 
@@ -96,7 +545,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Dec 25 2025 08:02:47 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jan 07 2026 04:12:09 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
