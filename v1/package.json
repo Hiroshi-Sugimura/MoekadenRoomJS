@@ -11,7 +11,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
+    "lint": "echo \"No linting configured\"",
+    "postinstall": "npm audit fix"
   },
   "homepage": "./",
   "keywords": [],
@@ -51,19 +52,19 @@
   },
   "dependencies": {
     "date-utils": "^1.2.21",
-    "echonet-lite": "^2.11.1",
+    "echonet-lite": "^2.18.1",
     "electron-compile": "^6.4.4",
-    "electron-log": "^4.4.8",
-    "electron-squirrel-startup": "^1.0.0",
-    "highlight.js": "^11.6.0",
-    "node-cron": "^3.0.2"
+    "electron-log": "^5.4.3",
+    "electron-squirrel-startup": "^1.0.1",
+    "highlight.js": "^11.11.1",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.66",
-    "@electron-forge/maker-deb": "^6.0.0-beta.66",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.66",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.66",
-    "@electron-forge/maker-zip": "^6.0.0-beta.66",
-    "electron": "21.0.1"
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-deb": "^7.10.2",
+    "@electron-forge/maker-rpm": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
+    "@electron-forge/maker-zip": "^7.10.2",
+    "electron": "39.2.7"
   }
 }
