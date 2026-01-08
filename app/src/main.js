@@ -43,8 +43,9 @@ let drawTimer = null;  // periodic draw push
 
 // アプリのconfig
 let config = {
-	width: isWin ? 860 : isMac ? 854 : isLinux ? 854 : 860,  // win = innerWidth:854 + 16
-	height: isWin ? 529 : isMac ? 480 : isLinux ? 480 : 529,   // innerHight:480 + 59
+	// useContentSize でフレーム差分をElectron側に任せるので純粋なコンテンツサイズを指定
+	width: 853,
+	height: 480,
 	// debug: true
 	debug: false,
 	EL: {
@@ -422,6 +423,7 @@ async function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: config.width,
 		height: config.height,
+		useContentSize: true, // フレームの太さをOSごとに吸収し、上の幅/高さをコンテンツ基準にする
 		resizable: false,
 		webPreferences: {
 			nodeIntegration: false, // default:false
