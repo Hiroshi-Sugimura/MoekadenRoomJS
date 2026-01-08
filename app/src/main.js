@@ -526,19 +526,19 @@ const menuItems = [{
 		{
 			label: 'Terms',
 			click: async () => {
-				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS/blob/HEAD/TERMS.md');
 			}
 		},
 		{
 			label: 'Privacy Policy',
 			click: async () => {
-				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS/blob/HEAD/PRIVACY_POLICY.md');
 			}
 		},
 		{
 			label: 'EULA',
 			click: async () => {
-				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS/blob/HEAD/EULA.md');
 			}
 		},
 		{
