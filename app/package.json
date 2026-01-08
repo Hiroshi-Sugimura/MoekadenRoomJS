@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@electron/notarize": "^3.1.1",
+    "about-window": "^1.15.2",
     "echonet-lite": "^2.18.1",
     "electron-squirrel-startup": "^1.0.1",
     "node-cron": "^4.2.1",

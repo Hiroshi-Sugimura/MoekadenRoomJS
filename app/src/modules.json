@@ -828,6 +828,14 @@
     "path": "C:\\Users\\HiroshiSUGIMURA\\Documents\\MoekadenRoomJS\\app\\node_modules\\abbrev",
     "licenseFile": "C:\\Users\\HiroshiSUGIMURA\\Documents\\MoekadenRoomJS\\app\\node_modules\\abbrev\\LICENSE"
   },
+  "about-window@1.15.2": {
+    "licenses": "MIT",
+    "repository": "https://github.com/rhysd/electron-about-window",
+    "publisher": "rhysd",
+    "email": "lin90162@yahoo.co.jp",
+    "path": "C:\\Users\\HiroshiSUGIMURA\\Documents\\MoekadenRoomJS\\app\\node_modules\\about-window",
+    "licenseFile": "C:\\Users\\HiroshiSUGIMURA\\Documents\\MoekadenRoomJS\\app\\node_modules\\about-window\\LICENSE.txt"
+  },
   "acorn-import-phases@1.0.4": {
     "licenses": "MIT",
     "repository": "https://github.com/nicolo-ribaudo/acorn-import-phases",

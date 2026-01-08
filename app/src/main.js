@@ -28,6 +28,7 @@ const isDevelopment = process.env.NODE_ENV == 'development'
 const { app, BrowserWindow, ipcMain, Menu, shell, dialog } = require('electron');
 const cron = require('node-cron');
 const { EL, mainEL } = require('./mainEL');
+const openAboutWindow = require('about-window').default;
 
 const getNow = () => {
 	const now = new Date();
@@ -459,6 +460,7 @@ async function createWindow() {
  */
 app.on('ready', async () => {
 	config.debug ? console.log(getNow(), '| main.app.on.ready') : 0;
+	menuInitialize();
 	createWindow();
 });
 
@@ -491,7 +493,7 @@ app.on('window-all-closed', async () => {
 
 // menu
 const menuItems = [{
-	label: appname,
+	label: 'MoekadenRoomJS',
 	submenu: [
 		{
 			label: 'About this',
@@ -511,11 +513,33 @@ const menuItems = [{
 			click(item, focusedWindow) {
 				if (focusedWindow) focusedWindow.reload()
 			}
+		}]
+}, {
+	label: 'Information',
+	submenu: [
+		{
+			label: 'Manual',
+			click: async () => {
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+			}
 		},
 		{
-			label: 'Toggle Full Screen',
-			accelerator: isMac ? 'Ctrl+Command+F' : 'F11',
-			click: function () { mainWindow.setFullScreen(!mainWindow.isFullScreen()); }
+			label: 'Terms',
+			click: async () => {
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+			}
+		},
+		{
+			label: 'Privacy Policy',
+			click: async () => {
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+			}
+		},
+		{
+			label: 'EULA',
+			click: async () => {
+				await shell.openExternal('https://github.com/Hiroshi-Sugimura/MoekadenRoomJS');
+			}
 		},
 		{
 			label: 'Toggle Developer Tools',
@@ -532,7 +556,6 @@ const menuItems = [{
 function menuInitialize() {
 	let menu = Menu.buildFromTemplate(menuItems);
 	Menu.setApplicationMenu(menu);
-	mainWindow.setMenu(menu);
 }
 
 
@@ -556,14 +579,16 @@ let sendIPCMessage = function (cmdStr, argStr) {
  * @returns {void}
  */
 function aboutThis() {
-	const options = {
-		type: 'info',
-		title: 'MoekadenRoomJS',
-		message: 'MoekadenRoomJS Version 1.0.0',
-		detail: 'This is an ECHONET Lite Emulator, called MoekadenRoomJS.\nIt is based on Moekaden made by SonyCSL, which is MIT License.\n\n- MoekadenRoomJS: https://github.com/Hiroshi-Sugimura/MoekadenRoomJS\n- ModekadenRoom: https://github.com/SonyCSL/MoekadenRoom'
-	};
-
-	dialog.showMessageBox(options);
+	openAboutWindow({
+		icon_path: path.join(__dirname, 'icons', 'icon.png'),
+		copyright: 'Copyright (c) Hiroshi SUGIMURA 2022-2026',
+		package_json_dir: path.join(__dirname, '..'),
+		bug_report_url: 'https://github.com/Hiroshi-Sugimura/MoekadenRoomJS/issues',
+		homepage: 'https://github.com/Hiroshi-Sugimura/MoekadenRoomJS',
+		description: 'MoekadenRoom (The JavaScript version)',
+		license: 'MIT',
+		use_inner_html: true
+	});
 }
 
 //////////////////////////////////////////////////////////////////////

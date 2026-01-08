@@ -207,6 +207,10 @@ Copyright (c) Hiroshi SUGIMURA (Kanagawa Institute of Technology, JAPAN)
 
 詳細は [LICENSE](LICENSE) ファイルを参照してください。
 
+- [利用規約 (Terms)](TERMS.md)
+- [プライバシーポリシー (Privacy Policy)](PRIVACY_POLICY.md)
+- [エンドユーザー使用許諾契約 (EULA)](EULA.md)
+
 
 ## 謝辞
 
