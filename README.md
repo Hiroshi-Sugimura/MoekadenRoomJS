@@ -1,7 +1,7 @@
 # MoekadenRoomJS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.4.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.1-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
 **MoekadenRoomJS** は、ECHONET Lite対応スマートホーム機器のエミュレータです。開発やテストに最適なツールで、実機がなくてもECHONET Lite対応アプリケーションの動作確認ができます。
@@ -408,6 +408,12 @@ using LicenseChecker.js
 
 
 ## 変更履歴
+
+### v1.4.1 (2026-01-08)
+- 🏷️ **名称変更**: プロジェクト記述を "MoekadenRoom (The JavaScript version)" に変更
+- 📦 **依存関係の修正**: 不足していたパッケージ (`node-cron`, `echonet-lite`) を追加
+- 🧹 **ライブラリ削減**: `date-utils` への依存を削除し、標準の JavaScript 機能に置換
+- 🔗 **リンクの修正**: README 内の Releases リンクを修正
 
 ### v1.4.0 (2026)
 - 🔄 Electron 39 + electron-forge 7.10 で再パッケージ（Squirrel, AppX, DMG, DEB, RPM）

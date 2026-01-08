@@ -2,7 +2,7 @@
   "name": "moekaden-room-js",
   "productName": "MoekadenRoomJS",
   "memo": "publish時にはappx/appxmanifest.xmlのバージョンも変更すること",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "MoekadenRoom (The JavaScript version)",
   "type": "module",
   "main": "src/main.js",
@@ -44,7 +44,6 @@
   },
   "dependencies": {
     "@electron/notarize": "^3.1.1",
-    "date-utils": "^1.2.21",
     "echonet-lite": "^2.18.1",
     "electron-squirrel-startup": "^1.0.1",
     "node-cron": "^4.2.1",

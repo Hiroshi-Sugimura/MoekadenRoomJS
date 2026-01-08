@@ -6,7 +6,7 @@
   <Identity Name="HiroshiSUGIMURA.MoekadenRoomJS"
     ProcessorArchitecture="x64"
     Publisher="CN=SUGIMURA Hiroshi (Kanagawa Institute of Technology)"
-    Version="1.4.0.0" />
+    Version="1.4.1.0" />
   <Properties>
     <DisplayName>MoekadenRoomJS</DisplayName>
     <PublisherDisplayName>SUGIMURA Hiroshi (Kanagawa Institute of Technology)</PublisherDisplayName>

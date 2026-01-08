@@ -1453,15 +1453,6 @@
     "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/cross-zip",
     "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/cross-zip/LICENSE"
   },
-  "date-utils@1.2.21": {
-    "licenses": "MIT",
-    "repository": "https://github.com/JerrySievert/date-utils",
-    "publisher": "Jerry Sievert",
-    "email": "code@legitimatesounding.com",
-    "url": "http://legitimatesounding.com/blog/",
-    "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/date-utils",
-    "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/date-utils/LICENSE"
-  },
   "debug@2.6.9": {
     "licenses": "MIT",
     "repository": "https://github.com/visionmedia/debug",
@@ -2961,7 +2952,7 @@
     "path": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/@npmcli/move-file/node_modules/mkdirp",
     "licenseFile": "/Users/sugimura/Documents/MoekadenRoomJS/app/node_modules/@npmcli/move-file/node_modules/mkdirp/LICENSE"
   },
-  "moekaden-room-js@1.4.0": {
+  "moekaden-room-js@1.4.1": {
     "licenses": "MIT",
     "publisher": "SUGIMURA Hiroshi",
     "email": "hiroshi.sugimura@gmail.com",
