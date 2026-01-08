@@ -6,7 +6,9 @@
 
 **MoekadenRoomJS** は、ECHONET Lite対応スマートホーム機器のエミュレータです。開発やテストに最適なツールで、実機がなくてもECHONET Lite対応アプリケーションの動作確認ができます。
 
-もともと [SonyCSL/MoekadenRoom](https://github.com/SonyCSL/MoekadenRoom) のProcessing・Java版があり、本プロジェクトはそのElectron・JavaScript版実装です。ソースコードはスクラッチから作成しているため、互換性を保ちつつも一部挙動が異なる場合があります。
+もともと [SonyCSL/MoekadenRoom](https://github.com/SonyCSL/MoekadenRoom) [1] のProcessing・Java版があり、本プロジェクトはそのElectron・JavaScript版実装です。ソースコードはスクラッチから作成しているため、互換性を保ちつつも一部挙動が異なる場合があります。
+
+[1] MoekadenRoom, Copyright (c) 2015 Sony Computer Science Laboratories, Inc.
 
 ## 特徴
 
